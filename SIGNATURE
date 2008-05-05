@@ -1,0 +1,42 @@
+This file contains message digests of all files listed in MANIFEST,
+signed via the Module::Signature module, version 0.55.
+
+To verify the content in this distribution, first make sure you have
+Module::Signature installed, then type:
+
+    % cpansign -v
+
+It will check each file's integrity, as well as the signature's
+validity.  If "==> Signature verified OK! <==" is not displayed,
+the distribution may already have been compromised, and you should
+not run its Makefile.PL or Build.PL.
+
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+SHA1 56feb63b6b110f72d8b81ecef7bc54fc6e61d85a Build.PL
+SHA1 793905283461c37bc0859a55d95e43b9ff981720 Changes
+SHA1 f19d33b5a15cb092fed13b7429a10b8f54ee1114 MANIFEST
+SHA1 fdeca26079773aa26c79349b7e77e482f233d747 META.yml
+SHA1 2e84d9f9abc211a42888e87c74d7e78ecb6b6d97 Makefile.PL
+SHA1 6aeacb5c964fb5820b09f8af41b733177e32fbfe README
+SHA1 18220cc3f6aac382507881d36ae131de51075e13 examples/bench.pl
+SHA1 4ca5aa2a4162cbd198f1e13d7938db0726f7e77a examples/example.pl
+SHA1 0c3e0859343a081b919ecb9d36d08d395bc62dfd lib/Parse/BBCode.pm
+SHA1 fc9230bf31c13bc9a3eee9ec2a20fc6639ec6638 lib/Parse/BBCode/Tag.pm
+SHA1 8ebabc5ce1fda06759a0d03d28910a8552bc9dd4 t/01_load.t
+SHA1 f99412021e18e066bfacc9e664ecf4099e416579 t/02_pod.t
+SHA1 e327763c2be65b7e7bf93a71207d10774bf7ae30 t/03_pod_cover.t
+SHA1 903aa5722ea548c7725767a49a947b4471e1885e t/04_parse.t
+SHA1 fb1d3c47ba25ec704f16880b40bbb373db71e973 t/05_balanced.t
+SHA1 1246906a655a27e70be4da5654d74ed286b9b198 t/06_unbalanced.t
+SHA1 9ddd479036adbb82a6682d5633797267e3aa6847 t/07_invalid.t
+SHA1 7be5b0de4ca511bf769350b69285ddd1c317bf62 t/08_various_tags.t
+SHA1 f508279f7e3c87452d0febcf1ea8893f4f3fcd05 t/09_close_tags.t
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.6 (GNU/Linux)
+
+iD8DBQFIH2VNx8FzFTuJkhcRAnk9AKCqt3ycJQpoQwxfCqFdgo9J8FSk8QCfWKa7
+dATlgcY2NCbeGGo2LULO2aw=
+=O63F
+-----END PGP SIGNATURE-----
