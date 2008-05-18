@@ -23,10 +23,9 @@ my %tag_def_html = (
     c => '<c>%{parse}s</c>',
 );
 my $bbc2html = Parse::BBCode->new({                                                              
-        tag_def => {
+        tags => {
             %tag_def_html,
         },
-        tags => [keys %tag_def_html ],
     }
 );
 

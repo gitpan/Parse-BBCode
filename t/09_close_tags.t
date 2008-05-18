@@ -5,12 +5,12 @@ use strict;
 use warnings;
 
 my $p = Parse::BBCode->new({
-        tag_def => {
+        tags => {
             '' => sub { Parse::BBCode::escape_html($_[1]) },
             i   => '<i>%s</i>',
             b   => '<b>%{parse}s</b>',
             size => '<font size="%a">%{parse}s</font>',
-            url => '<a href="%{URL}A">%{parse}s</a>',
+            url => '<a href="%{link}A">%{parse}s</a>',
             quote => 'block:<quote>%{parse}s</quote>',
         },
         close_open_tags => 1,

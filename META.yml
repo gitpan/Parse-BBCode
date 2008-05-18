@@ -1,6 +1,6 @@
 ---
 name: Parse-BBCode
-version: 0.03
+version: 0.04
 author:
   - Tina Mueller
 abstract: Module to turn BBCode into HTML or plain text
@@ -20,10 +20,13 @@ build_requires:
 provides:
   Parse::BBCode:
     file: lib/Parse/BBCode.pm
-    version: 0.03
+    version: 0.04
+  Parse::BBCode::HTML:
+    file: lib/Parse/BBCode/HTML.pm
+    version: 0.01
   Parse::BBCode::Tag:
     file: lib/Parse/BBCode/Tag.pm
-    version: 0.01
+    version: 0.02
 generated_by: Module::Build version 0.2808
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.2.html

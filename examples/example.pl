@@ -15,16 +15,15 @@ my %tag_def_html = (
         },
     },
     perlmonks => '<a href="http://www.perlmonks.org/?node=%{uri|html}a">%{parse}s</a>',
-    url => '<a href="%{URL}a">%{parse}s</a>',
+    url => '<a href="%{link}a">%{parse}s</a>',
     i   => '<i>%{parse}s</i>',
     b   => '<b>%{parse}s</b>',
 );
 
 my $bbc2html = Parse::BBCode->new({                                                              
-        tag_def => {
+        tags => {
             %tag_def_html,
         },
-        tags => [qw/ i b perlmonks url code /],
     }
 );
 

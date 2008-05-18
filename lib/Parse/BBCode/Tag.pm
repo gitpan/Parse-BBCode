@@ -3,10 +3,10 @@ use strict;
 use warnings;
 use Carp qw(croak carp);
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 use base 'Class::Accessor::Fast';
 __PACKAGE__->follow_best_practice;
-__PACKAGE__->mk_accessors(qw/ name attr attr_raw content children
+__PACKAGE__->mk_accessors(qw/ name attr attr_raw content
     finished start end close class /);
 
 sub add_content {
@@ -71,3 +71,106 @@ sub _reduce {
 
 
 1;
+
+__END__
+
+=pod
+
+=head1 NAME
+
+Parse::BBCode::Tag - Tag Class for Parse::BBCode
+
+=head1 DESCRIPTION
+
+If you parse a bbcode with L<Parse::BBCode> C<Parse::BBCode::parse> returns
+a parse tree of Tag objects.
+
+=head1 METHODS
+
+=over 4
+
+=item add_content
+
+    $tag->add_content('string');
+
+Adds 'string' to the end of the tag content.
+
+    $tag->add_content($another_tag);
+
+Adds C<$another_tag> to the end of the tag content.
+
+=item raw_text
+
+    my $bbcode = $tag->raw_text;
+
+Returns the raw text of the parse tree, so all tags are converted
+back to bbcode.
+
+=item raw_content
+
+    my $bbcode = $tag->raw_text;
+
+Returns the raw content of the tag without the opening and closing tags.
+So if you have tag that was parsed from
+
+    [i]italic and [bold]test[/b][/i]
+
+it will return
+
+    italic and [bold]test[/b]
+
+=back
+
+=head1 ACCESSORS
+
+The accessors of a tag are currently
+
+    name attr attr_raw content finished start end close class
+
+You can call each accessor with C<get_*> and C<set_*>
+
+=over 4
+
+=item name
+
+The tag name. for C<[i]...[/i]> it is C<i>, the lowercase tag name.
+
+=item attr
+
+TODO
+
+=item attr_raw
+
+The raw text of the attribute
+
+=item content
+
+An arrayref of the content of the tag, each element either a string
+or a tag itself.
+
+=item finished
+
+Used during parsing, true if the end of the tag was found.
+
+=item start
+
+The original start string, e.g. 'C<[size=7]>'
+
+=item end
+
+The original end string, e.g. 'C<[/size]>'
+
+=item close
+
+True if the tag needs a closing tag. A tag which doesn't need a closing
+tag is C<[*]> for example, inside of C<[list]> tags.
+
+=item class
+
+'block' or 'inline'
+
+=back
+
+=cut
+
+

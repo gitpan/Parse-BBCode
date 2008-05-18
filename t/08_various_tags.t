@@ -1,16 +1,16 @@
 use lib 'lib';
-use Test::More tests => 19;
+use Test::More tests => 22;
 use Parse::BBCode;
 use strict;
 use warnings;
 
 my $p = Parse::BBCode->new({
-        tag_def => {
+        tags => {
             '' => sub { Parse::BBCode::escape_html($_[1]) },
             i   => '<i>%s</i>',
             b   => '<b>%{parse}s</b>',
             size => '<font size="%a">%{parse}s</font>',
-            url => '<a href="%{URL}A">%{parse}s</a>',
+            url => '<a href="%{link}A">%{parse}s</a>',
             wikipedia => '<a href="http://wikipedia.../?search=%{uri}A">%{parse}s</a>',
             noparse => '<pre>%{html}s</pre>',
             code => {
@@ -53,6 +53,7 @@ my $p = Parse::BBCode->new({
                 output => '<li>%s</li>',
                 close => 0,
             },
+            'img' => '<img src="%{html}A" alt="%{html}s" title="%{html}s">',
         },
     }
 );
@@ -90,6 +91,12 @@ my @tests = (
         q#<ul><li>first</li><li>second with [url]foo</li><li>third</li></ul># ],
     [ q#[list=1][*]first[*]second with [url]foo and [b]bold[/b][*]third[/list]#,
         q#<ul><li>first</li><li>second with [url]foo and <b>bold</b></li><li>third</li></ul># ],
+    [ q#[img]/path/to/image.png[/img]#,
+        q#<img src="/path/to/image.png" alt="/path/to/image.png" title="/path/to/image.png"># ],
+    [ q#[img=/path/to/image.png]description[/img]#,
+        q#<img src="/path/to/image.png" alt="description" title="description"># ],
+    [ q#[img=/path/to/image.png]description [b]with bold[/b][/img]#,
+        q#<img src="/path/to/image.png" alt="description [b]with bold[/b]" title="description [b]with bold[/b]"># ],
 );
 
 for (@tests) {
@@ -101,7 +108,7 @@ for (@tests) {
 
 {
     my $p = Parse::BBCode->new({
-            tag_def => {
+            tags => {
                 '' => 'plain',
                 i   => '<i>%s</i>',
             },
@@ -116,7 +123,7 @@ for (@tests) {
 
 {
     my $p = Parse::BBCode->new({
-            tag_def => {
+            tags => {
                 i   => '<i>%s</i>',
             },
         }
@@ -130,7 +137,7 @@ for (@tests) {
 
 {
     my $p = Parse::BBCode->new({
-            tag_def => {
+            tags => {
                 '' => sub { Parse::BBCode::escape_html(undef) },
                 i   => '<i>%s</i>',
             },

@@ -1,5 +1,8 @@
 Revision history for Perl module Parse::BBCode
 
+0.04 Sun May 18 19:32:11 CEST 2008
+- Several bugfixes, some syntax changes, added escapes
+
 0.03 Mon May  5 21:50:39 CEST 2008
 - Initial Version
 

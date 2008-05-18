@@ -4,6 +4,8 @@ use blib; # for development
 use Test::More;
 eval "use Test::Pod::Coverage 1.00";
 plan skip_all => "Test::Pod::Coverage required for testing pod coverage" if $@;
-plan tests => 1;
+plan tests => 3;
 pod_coverage_ok( "Parse::BBCode", "Parse::BBCode is covered");
+pod_coverage_ok( "Parse::BBCode::Tag", "Parse::BBCode::Tag is covered");
+pod_coverage_ok( "Parse::BBCode::HTML", "Parse::BBCode::HTML is covered");
 

@@ -1,16 +1,11 @@
 use Data::Dumper;
 use lib 'lib';
-use Test::More tests => 2;
+use Test::More tests => 23;
 use Parse::BBCode;
 
 my %tag_def_html = (
 
-    '' => sub {
-        my $text = Parse::BBCode::escape_html($_[1]);
-        $text =~ s/\n/<br>\n/g;
-        return $text;
-    },
-    code => {
+    code2 => {
 #        class => 'block',
         parse => 0,
         code => sub {
@@ -19,44 +14,75 @@ my %tag_def_html = (
             "<code>$c</code>"
         },
     },
-    perlmonks => '<a href="http://www.perlmonks.org/?node=%{uri|html}a">%{parse}s</a>',
-    url => '<a href="%{URL}A">%{parse}s</a>',
-    i => '<i>%{parse}s</i>',
-    b => '<b>%{parse}s</b>',
-    a => '<a>%s</a>',
+    perlmonks => '<a href="http://www.perlmonks.org/?node=%{uri|html}a" rel="nofollow">%{parse}s</a>',
 );
 
 my $bbc2html = Parse::BBCode->new({                                                              
-        tag_def => {
+        tags => {
+            Parse::BBCode::HTML->defaults,
             %tag_def_html,
         },
-        tags => [qw/ i b perlmonks url code a /],
     }
 );
 
-my $text = <<'EOM';
-[i=23]italic [b]bold italic <html>[/b][/i]
-[A][code][a][c][/code][/a]
-[perlmonks=123]foo <html>[i]italic[/i][/perlmonks]
-[url=javascript:alert(123)]foo <html>[i]italic[/i][/url]
-[code]foo[b][/code]
-[code]foo[code]bar<html>[/code][/code]
-[i]italic [b]bold italic <html>[/i][/b]
-[B]bold? [test
-EOM
-
-my $exp = <<'EOM';
-<i>italic <b>bold italic &lt;html&gt;</b></i><br>
-<a><code>[a][c]</code></a><br>
-<a href="http://www.perlmonks.org/?node=123">foo &lt;html&gt;<i>italic</i></a><br>
-<a href="">foo &lt;html&gt;<i>italic</i></a><br>
-<code>foo[b]</code><br>
-<code>foo[code]bar&lt;html&gt;</code>[/code]<br>
-<i>italic [b]bold italic &lt;html&gt;</i>[/b]<br>
-[B]bold? [test<br>
-EOM
-
-
+my @tests = (
+    [ q#[B]bold? [test#,
+        q#[B]bold? [test# ],
+    [ q#[i=23]italic [b]bold italic <html>[/b][/i]# . $/,
+        q#<i>italic <b>bold italic &lt;html&gt;</b></i><br># ],
+    [ q#[U][noparse]<html>[u][c][/noparse][/u]# . $/,
+        q#<u>&lt;html&gt;[u][c]</u><br># ],
+    [ q#[img=foo.jpg]desc <html>[/img]#,
+        q#<img src="foo.jpg" alt="[desc &lt;html&gt;]" title="desc &lt;html&gt;"># ],
+    [ q#[url=javascript:alert(123)]foo <html>[i]italic[/i][/url]#,
+        q#<a href="" rel="nofollow">foo &lt;html&gt;<i>italic</i></a># ],
+    [ q#[url=http://foo]foo <html>[i]italic[/i][/url]#,
+        q#<a href="http://foo" rel="nofollow">foo &lt;html&gt;<i>italic</i></a># ],
+    [ q#[email=no"mail]mail [i]me[/i][/email]#,
+        q#<a href="mailto:">mail <i>me</i></a># ],
+    [ q#[email="test <foo@example.org>"]mail [i]me[/i][/email]#,
+        q#<a href="mailto:foo@example.org">mail <i>me</i></a># ],
+    [ q#[email]test <foo@example.org>[/email]#,
+        q#<a href="mailto:foo@example.org">test &lt;foo@example.org&gt;</a># ],
+    [ q#[size=7]big[/size]#,
+        q#<span style="font-size: 7">big</span># ],
+    [ q#[size=huge!]big[/size]#,
+        q#<span style="font-size: 0">big</span># ],
+    [ q{[color=#0000ff]blue[/color]},
+        q{<span style="color: #0000ff">blue</span>} ],
+    [ q{[color="no color!"]blue[/color]},
+        q{<span style="color: inherit">blue</span>} ],
+    [ q#[list=1][*]first[*]second[*]third[/list]#,
+        q#<ul><li>first</li><li>second</li><li>third</li></ul># ],
+    [ q#[quote=who]cite[/quote]#,
+        q#<div class="bbcode_quote_header">who:<div class="bbcode_quote_body">cite</div</div># ],
+    [ q#[code]use strict;[/code]#,
+        q#<div class="bbcode_code_header">:<div class="bbcode_cote_body">use strict;</div></div># ],
+    [ q#[perlmonks=123]foo <html>[i]italic[/i][/perlmonks]# . $/,
+        q#<a href="http://www.perlmonks.org/?node=123" rel="nofollow">foo &lt;html&gt;<i>italic</i></a><br># ],
+    [ q#[noparse]foo[b][/noparse]#,
+        q#foo[b]# ],
+    [ q#[code]foo[code]bar<html>[/code][/code]#,
+        q#<div class="bbcode_code_header">:<div class="bbcode_cote_body">foo[code]bar&lt;html&gt;</div></div>[/code]# ],
+    [ q#[i]italic [b]bold italic <html>[/i][/b]#,
+        q#<i>italic [b]bold italic &lt;html&gt;</i>[/b]# ],
+    [ q#[i]italic [b]bold italic <html>[/i][/b]#,
+        q#[i]italic <b>bold italic &lt;html&gt;[/i]</b>#, 'i' ],
+);
+for my $test (@tests) {
+    my ($text, $exp, $forbid) = @$test;
+    if ($forbid) {
+        $bbc2html->forbid($forbid);
+    }
+    my $parsed = $bbc2html->render($text);
+    #warn __PACKAGE__.':'.__LINE__.": $parsed\n";
+    s/[\r\n]//g for ($exp, $parsed);
+    $text =~ s/[\r\n]//g;
+    cmp_ok($parsed, 'eq', $exp, "parse '$text'");
+    if ($forbid) {
+        $bbc2html->permit($forbid);
+    }
+}
 
 eval {
     my $parsed = $bbc2html->render();
@@ -65,7 +91,9 @@ my $error = $@;
 #warn __PACKAGE__.':'.__LINE__.": <<$@>>\n";
 cmp_ok($error, '=~', 'Missing input', "Missing input for render()");
 
-my $parsed = $bbc2html->render($text);
-#warn __PACKAGE__.':'.__LINE__.": $parsed\n";
-s/[\r\n]//g for ($exp, $parsed);
-cmp_ok($parsed, 'eq', $exp, "parse");
+$bbc2html->permit('foobar');
+my $allowed = $bbc2html->get_allowed;
+#warn __PACKAGE__.':'.__LINE__.$".Data::Dumper->Dump([\$allowed], ['allowed']);
+ok(
+    (!grep { $_ eq 'foobar' } @$allowed),
+    "permit() an unsupported tag");
