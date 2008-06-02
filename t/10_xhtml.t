@@ -1,12 +1,9 @@
 use Data::Dumper;
-use Test::More tests => 24;
-use Parse::BBCode;
+use Test::More tests => 20;
+use Parse::BBCode::XHTML;
 use strict;
 use warnings;
 
-my %tag_def_html = (
-    perlmonks => '<a href="http://www.perlmonks.org/?node=%{uri|html}a" rel="nofollow">%{parse}s</a>',
-);
 eval {
     require
         Email::Valid;
@@ -14,44 +11,17 @@ eval {
 my $email_valid = $@ ? 0 : 1;
 #$email_valid = 0;
 
-my $bbc2html = Parse::BBCode->new({                                                              
-        tags => {
-            Parse::BBCode::HTML->defaults,
-            %tag_def_html,
-        },
-    }
-);
-my $bbc2html_block = Parse::BBCode->new({                                                              
-        tags => {
-            Parse::BBCode::HTML->defaults,
-            %tag_def_html,
-            '' => sub {
-                my $outer = $_[1];
-                my $block = $outer->get_class eq 'block' ? 1 : 0;
-                my $text = Parse::BBCode::escape_html($_[2]);
-                if ($block) {
-                    $text =~ s[ (\r?\n|\r) (\r?\n|\r)* ]
-                        [if ($2) { "</p><p>" } else { "<br>\n" } ]exg;
-                }
-                else {
-                    $text =~ s[ (\r?\n|\r) ][<br>]xg;
-                }
-                $text;
-            },
-        },
-    }
-);
-
+my $parser = Parse::BBCode::XHTML->new();
 
 my @tests = (
     [ q#[B]bold? [test#,
         q#[B]bold? [test# ],
     [ q#[i=23]italic [b]bold italic <html>[/b][/i]# . $/,
-        q#<i>italic <b>bold italic &lt;html&gt;</b></i><br># ],
+        q#<i>italic <b>bold italic &lt;html&gt;</b></i><br /># ],
     [ q#[U][noparse]<html>[u][c][/noparse][/u]# . $/,
-        q#<u>&lt;html&gt;[u][c]</u><br># ],
+        q#<u>&lt;html&gt;[u][c]</u><br /># ],
     [ q#[img=foo.jpg]desc <html>[/img]#,
-        q#<img src="foo.jpg" alt="[desc &lt;html&gt;]" title="desc &lt;html&gt;"># ],
+        q#<img src="foo.jpg" alt="[desc &lt;html&gt;]" title="desc &lt;html&gt;" /># ],
     [ q#[url=javascript:alert(123)]foo <html>[i]italic[/i][/url]#,
         q#<a href="" rel="nofollow">foo &lt;html&gt;<i>italic</i></a># ],
     [ q#[url=http://foo]foo <html>[i]italic[/i][/url]#,
@@ -76,8 +46,6 @@ my @tests = (
         q#<div class="bbcode_quote_header">who:<div class="bbcode_quote_body">cite</div</div># ],
     [ q#[code]use strict;[/code]#,
         q#<div class="bbcode_code_header">:<div class="bbcode_cote_body">use strict;</div></div># ],
-    [ q#[perlmonks=123]foo <html>[i]italic[/i][/perlmonks]# . $/,
-        q#<a href="http://www.perlmonks.org/?node=123" rel="nofollow">foo &lt;html&gt;<i>italic</i></a><br># ],
     [ q#[noparse]foo[b][/noparse]#,
         q#foo[b]# ],
     [ q#[code]foo[code]bar<html>[/code][/code]#,
@@ -86,12 +54,9 @@ my @tests = (
         q#<i>italic [b]bold italic &lt;html&gt;</i>[/b]# ],
     [ q#[i]italic [b]bold italic <html>[/i][/b]#,
         q#[i]italic <b>bold italic &lt;html&gt;[/i]</b>#, 'i' ],
-    [ "outer\n\nnewline\n" . qq# [i]inner\n\nnewline[/i]#,
-        q#outer</p><p>newline<br> <i>inner<br><br>newline</i>#, undef, $bbc2html_block ],
 );
 for my $test (@tests) {
-    my ($text, $exp, $forbid, $parser) = @$test;
-    $parser ||= $bbc2html;
+    my ($text, $exp, $forbid) = @$test;
     if ($forbid) {
         $parser->forbid($forbid);
     }
@@ -105,16 +70,3 @@ for my $test (@tests) {
     }
 }
 
-eval {
-    my $parsed = $bbc2html->render();
-};
-my $error = $@;
-#warn __PACKAGE__.':'.__LINE__.": <<$@>>\n";
-cmp_ok($error, '=~', 'Missing input', "Missing input for render()");
-
-$bbc2html->permit('foobar');
-my $allowed = $bbc2html->get_allowed;
-#warn __PACKAGE__.':'.__LINE__.$".Data::Dumper->Dump([\$allowed], ['allowed']);
-ok(
-    (!grep { $_ eq 'foobar' } @$allowed),
-    "permit() an unsupported tag");

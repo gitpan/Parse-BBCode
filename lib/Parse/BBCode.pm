@@ -2,7 +2,7 @@ package Parse::BBCode;
 use strict;
 use warnings;
 use Parse::BBCode::Tag;
-use Parse::BBCode::HTML;
+use Parse::BBCode::HTML qw/ &defaults &default_escapes &optional /;
 use base 'Class::Accessor::Fast';
 __PACKAGE__->follow_best_practice;
 __PACKAGE__->mk_accessors(qw/ tags allowed compiled plain strict_attributes
@@ -10,19 +10,20 @@ __PACKAGE__->mk_accessors(qw/ tags allowed compiled plain strict_attributes
 use Data::Dumper;
 use Carp;
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 
 my %defaults = (
     strict_attributes => 1,
 );
 sub new {
     my ($class, $args) = @_;
+    $args ||= {};
     my %args = %$args;
     unless ($args{tags}) {
-        $args{tags} = \Parse::BBCode::HTML->defaults;
+        $args{tags} = { $class->defaults };
     }
     unless ($args{escapes}) {
-        $args{escapes} = {Parse::BBCode::HTML->default_escapes };
+        $args{escapes} = {$class->default_escapes };
     }
     my $self = $class->SUPER::new({
         %defaults,
@@ -66,7 +67,7 @@ sub _compile_tags {
         }
         else {
             $plain = sub {
-                my $text = Parse::BBCode::escape_html($_[1]);
+                my $text = Parse::BBCode::escape_html($_[2]);
                 $text =~ s/\r?\n|\r/<br>\n/g;
                 $text;
             };
@@ -137,7 +138,6 @@ sub _compile_def {
 
             # just text
             unless (ref $c) {
-                #$out .= $self->_render_text($c);
                 $out .= $c;
             }
             # tag attribute or content
@@ -176,9 +176,10 @@ sub _compile_def {
 }
 
 sub _render_text {
-    my ($self, $text) = @_;
+    my ($self, $tag, $text) = @_;
+    #warn __PACKAGE__.':'.__LINE__.": text '$text'\n";
     defined (my $code = $self->get_plain) or return $text;
-    return $code->($self, $text);
+    return $code->($self, $tag, $text);
 }
 
 sub parse {
@@ -427,44 +428,43 @@ sub render {
 }
 
 sub render_tree {
-    my ($self, $tree) = @_;
+    my ($self, $tree, $outer) = @_;
     my $out = '';
     my $defs = $self->get_tags;
-    for my $el (ref $tree eq 'ARRAY' ? @$tree : $tree) {
-        if (ref $el) {
-            my $name = $el->get_name;
-            my $code = $defs->{$name}->{code};
-            my $parse = $defs->{$name}->{parse};
-            my $attr = $el->get_attr->[0]->[0];
-            my $content = $el->get_content;
-            my $fallback = (defined $attr and length $attr) ? $attr : $content;
-            if (ref $fallback) {
-                # we have recursive content, we don't want that in
-                # an attribute
-                $fallback = join '', grep {
-                    not ref $_
-                } @$fallback;
-            }
-            if (not exists $defs->{$name}->{parse} or $parse) {
-                $content = $self->render_tree($content);
-            }
-            else {
-                $content = join '', @$content;
-            }
-            if ($code) {
-                my $o = $code->($self, $attr, \$content, $fallback, $el);
-                $out .= $o;
-            }
-            else {
-                $out .= $content;
+    if (ref $tree) {
+        my $name = $tree->get_name;
+        my $code = $defs->{$name}->{code};
+        my $parse = $defs->{$name}->{parse};
+        my $attr = $tree->get_attr->[0]->[0];
+        my $content = $tree->get_content;
+        my $fallback = (defined $attr and length $attr) ? $attr : $content;
+        my $string = '';
+        if (ref $fallback) {
+            # we have recursive content, we don't want that in
+            # an attribute
+            $fallback = join '', grep {
+                not ref $_
+            } @$fallback;
+        }
+        if (not exists $defs->{$name}->{parse} or $parse) {
+            for my $c (@$content) {
+                $string .= $self->render_tree($c, $tree);
             }
         }
         else {
-            #warn __PACKAGE__.':'.__LINE__.": ==== $el\n";
-            my $test = $self->_render_text($el);
-            #warn __PACKAGE__.':'.__LINE__.": ==== $test\n";
-            $out .= $self->_render_text($el);
+            $string = join '', @$content;
         }
+        if ($code) {
+            my $o = $code->($self, $attr, \$string, $fallback, $tree);
+            $out .= $o;
+        }
+        else {
+            $out .= $string;
+        }
+    }
+    else {
+        #warn __PACKAGE__.':'.__LINE__.": ==== $tree\n";
+        $out .= $self->_render_text($outer, $tree);
     }
     return $out;
 }
@@ -760,7 +760,7 @@ The following list explains the above tag definitions:
 This defines how plain text should be rendered:
 
     '' => sub {
-        my $e = Parse::BBCode::escape_html($_[1]);
+        my $e = Parse::BBCode::escape_html($_[2]);
         $e =~ s/\r?\n|\r/<br>\n/g;
         $e
     },

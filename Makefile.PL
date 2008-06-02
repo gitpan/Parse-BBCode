@@ -2,19 +2,19 @@
 use ExtUtils::MakeMaker;
 WriteMakefile
 (
-          'PL_FILES' => {},
-          'INSTALLDIRS' => 'site',
           'NAME' => 'Parse::BBCode',
-          'EXE_FILES' => [],
           'VERSION_FROM' => 'lib/Parse/BBCode.pm',
           'PREREQ_PM' => {
-                           'warnings' => 0,
-                           'URI::Escape' => 0,
-                           'Data::Dumper' => 0,
-                           'Class::Accessor::Fast' => 0,
-                           'Carp' => 0,
-                           'strict' => 0,
-                           'Test::More' => 0
-                         }
+                           'Carp' => '0',
+                           'Class::Accessor::Fast' => '0',
+                           'Data::Dumper' => '0',
+                           'Test::More' => '0',
+                           'URI::Escape' => '0',
+                           'strict' => '0',
+                           'warnings' => '0'
+                         },
+          'INSTALLDIRS' => 'site',
+          'EXE_FILES' => [],
+          'PL_FILES' => {}
         )
 ;

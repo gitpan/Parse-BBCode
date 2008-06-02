@@ -4,8 +4,10 @@ use warnings;
 use Data::Dumper;
 use Carp qw(croak carp);
 use URI::Escape;
+use base 'Exporter';
+our @EXPORT_OK = qw/ &defaults &default_escapes &optional /;
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 my $email_valid = 0;
 eval {
     require
@@ -128,67 +130,21 @@ Parse::BBCode::HTML - Provides HTML defaults for Parse::BBCode
 
 =item defaults
 
-Returns a hash with default tags. These are defined as follows:
+Returns a hash with default tags.
 
-    'b'     => '<b>%s</b>',
-    'i'     => '<i>%s</i>',
-    'u'     => '<u>%s</u>',
-    'img'   => '<img src="%{html}A" alt="[%{html}s]" title="%{html}s">',
-    'url'   => '<a href="%{link}A" rel="nofollow">%s</a>',
-    'email' => '<a href="mailto:%{email}A">%s</a>',
-    'size'  => '<span style="font-size: %{num}a">%s</span>',
-    'color' => '<span style="color: %{htmlcolor}a">%s</span>',
-    'list'  => 'block:<ul>%{parse}s</ul>',
-    '*'     => {
-        parse => 1,
-        output => '<li>%s</li>',
-        close => 0,
-    },
-    'quote' => 'block:<div class="bbcode_quote_header">%{html}a:
-<div class="bbcode_quote_body">%s</div</div>',
-    'code'  => 'block:<div class="bbcode_code_header">%{html}a:
-<div class="bbcode_cote_body">%{html}s</div></div>',
-    'noparse' => '%{html}s',
+    b, i, u, img, url, email, size, color, list, *, quote, code
 
 =item default_escapes
 
 Returns a hash with escaping functions. These are:
 
-    html => sub {
-        Parse::BBCode::escape_html($_[2]),
-    },
-    uri => sub {
-        uri_escape($_[2]),
-    },
-    link => sub {
-        my ($p, $tag, $var) = @_;
-        if ($var =~ m{^[a-z]+://}i) {
-        }
-        elsif ($var =~ m{^\s*[a-z]+\s*:}i) {
-            # invalid
-            $var = '';
-        }
-        $var = Parse::BBCode::escape_html($var);
-        return $var;
-    },
-    email => sub {
-        my ($p, $tag, $var) = @_;
-        # extracts the address part of the email or undef
-        my $valid = Email::Valid->address($var);
-        return $valid ? $valid : '';
-    },
-    htmlcolor => sub {
-        $_[2] =~ m/^(?:[a-z]+|#[0-9a-f]{6})\z/ ? $_[2] : 'inherit'
-    },
-    num => sub {
-        $_[2] =~ m/^[0-9]+\z/ ? $_[2] : 0;
-    },
+    html, uri, link, email, htmlcolor, num
 
 =item optional
 
 Returns a hash of optional tags. These are:
 
-    'html' => '%{noescape}s',
+    html
 
 =back
 

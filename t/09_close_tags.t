@@ -1,4 +1,3 @@
-use lib 'lib';
 use Test::More tests => 8;
 use Parse::BBCode;
 use strict;
@@ -6,7 +5,7 @@ use warnings;
 
 my $p = Parse::BBCode->new({
         tags => {
-            '' => sub { Parse::BBCode::escape_html($_[1]) },
+            '' => sub { Parse::BBCode::escape_html($_[2]) },
             i   => '<i>%s</i>',
             b   => '<b>%{parse}s</b>',
             size => '<font size="%a">%{parse}s</font>',
