@@ -20,8 +20,8 @@ my %default_tags = (
     'i'     => '<i>%s</i>',
     'u'     => '<u>%s</u>',
     'img'   => '<img src="%{html}A" alt="[%{html}s]" title="%{html}s">',
-    'url'   => '<a href="%{link}A" rel="nofollow">%s</a>',
-    'email' => '<a href="mailto:%{email}A">%s</a>',
+    'url'   => 'url:<a href="%{link}A" rel="nofollow">%s</a>',
+    'email' => 'url:<a href="mailto:%{email}A">%s</a>',
     'size'  => '<span style="font-size: %{num}a">%s</span>',
     'color' => '<span style="color: %{htmlcolor}a">%s</span>',
     'list'  => 'block:<ul>%{parse}s</ul>',
@@ -33,7 +33,7 @@ my %default_tags = (
     'quote' => 'block:<div class="bbcode_quote_header">%{html}a:
 <div class="bbcode_quote_body">%s</div</div>',
     'code'  => 'block:<div class="bbcode_code_header">%{html}a:
-<div class="bbcode_cote_body">%{html}s</div></div>',
+<div class="bbcode_code_body">%{html}s</div></div>',
     'noparse' => '%{html}s',
 );
 my %optional_tags = (

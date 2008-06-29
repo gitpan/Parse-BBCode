@@ -18,6 +18,7 @@ my $build = Module::Build->new(
     },
     build_requires => {
         'Test::More'          => 0,
+        'Test::NoWarnings'    => 0,
     },
     recommends         => {
     },

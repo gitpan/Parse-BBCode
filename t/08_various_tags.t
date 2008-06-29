@@ -1,5 +1,6 @@
 use lib 'lib';
-use Test::More tests => 22;
+use Test::More tests => 28;
+use Test::NoWarnings;
 use Parse::BBCode;
 use strict;
 use warnings;
@@ -54,6 +55,12 @@ my $p = Parse::BBCode->new({
                 close => 0,
             },
             'img' => '<img src="%{html}A" alt="%{html}s" title="%{html}s">',
+            hr => {
+                class => 'block',
+                output => '<hr>',
+                single => 1,
+            },
+            quote => 'block:<blockquote>%s</blockquote>',
         },
     }
 );
@@ -97,6 +104,16 @@ my @tests = (
         q#<img src="/path/to/image.png" alt="description" title="description"># ],
     [ q#[img=/path/to/image.png]description [b]with bold[/b][/img]#,
         q#<img src="/path/to/image.png" alt="description [b]with bold[/b]" title="description [b]with bold[/b]"># ],
+    [ q#text [quote]with bold and [hr]line[/quote]#,
+        q#text <blockquote>with bold and <hr>line</blockquote># ],
+    [ qq#text [quote="foo"][quote="bar"]inner quote[/quote]outer quote[/quote]#,
+        q#text <blockquote><blockquote>inner quote</blockquote>outer quote</blockquote># ],
+    [ q#[quote="admin@2008-06-27 19:00:25"][quote="foo@2007-08-13 22:12:32"]test[/quote]test[/quote]#,
+        q#<blockquote><blockquote>test</blockquote>test</blockquote># ],
+    [ q#text [b]with bold and [hr]line[/b]#,
+        q#text [b]with bold and <hr>line[/b]# ],
+    [ q#text with bold and [hr]line#,
+        q#text with bold and <hr>line# ],
 );
 
 for (@tests) {
@@ -105,7 +122,6 @@ for (@tests) {
     #warn __PACKAGE__.':'.__LINE__.": $parsed\n";
     cmp_ok($parsed, 'eq', $exp, "$in");
 }
-
 {
     my $p = Parse::BBCode->new({
             tags => {

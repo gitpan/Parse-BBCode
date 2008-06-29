@@ -1,5 +1,6 @@
 use Data::Dumper;
-use Test::More tests => 20;
+use Test::More tests => 21;
+use Test::NoWarnings;
 use Parse::BBCode::XHTML;
 use strict;
 use warnings;
@@ -45,11 +46,11 @@ my @tests = (
     [ q#[quote=who]cite[/quote]#,
         q#<div class="bbcode_quote_header">who:<div class="bbcode_quote_body">cite</div</div># ],
     [ q#[code]use strict;[/code]#,
-        q#<div class="bbcode_code_header">:<div class="bbcode_cote_body">use strict;</div></div># ],
+        q#<div class="bbcode_code_header">:<div class="bbcode_code_body">use strict;</div></div># ],
     [ q#[noparse]foo[b][/noparse]#,
         q#foo[b]# ],
     [ q#[code]foo[code]bar<html>[/code][/code]#,
-        q#<div class="bbcode_code_header">:<div class="bbcode_cote_body">foo[code]bar&lt;html&gt;</div></div>[/code]# ],
+        q#<div class="bbcode_code_header">:<div class="bbcode_code_body">foo[code]bar&lt;html&gt;</div></div>[/code]# ],
     [ q#[i]italic [b]bold italic <html>[/i][/b]#,
         q#<i>italic [b]bold italic &lt;html&gt;</i>[/b]# ],
     [ q#[i]italic [b]bold italic <html>[/i][/b]#,

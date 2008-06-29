@@ -7,7 +7,7 @@ our $VERSION = '0.02';
 use base 'Class::Accessor::Fast';
 __PACKAGE__->follow_best_practice;
 __PACKAGE__->mk_accessors(qw/ name attr attr_raw content
-    finished start end close class /);
+    finished start end close class single in_url /);
 
 sub add_content {
     my ($self, $new) = @_;
@@ -167,7 +167,12 @@ tag is C<[*]> for example, inside of C<[list]> tags.
 
 =item class
 
-'block' or 'inline'
+'block', 'inline' or 'url'
+
+=item single
+
+If this tag does not have a closing tag and also no content, like
+[hr], for example, set this to true. Default is 0.
 
 =back
 

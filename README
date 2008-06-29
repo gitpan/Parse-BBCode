@@ -2,20 +2,23 @@ NAME
     Parse::BBCode - Module to turn BBCode into HTML or plain text
 
 SYNOPSIS
-    To parse a bbcode string:
+    To parse a bbcode string, set up a parser with the default HTML
+    defintions of Parse::BBCode::HTML:
 
         use Parse::BBCode;
         my $p = Parse::BBCode->new();
         my $code = 'some [b]b code[/b]';
         my $parsed = $p->render($code);
 
-    This sets up a parser with the default HTML defintions of
-    Parse::BBCode::HTML.
+    Or if you want to define your own tags:
 
-        # or if you want to define your own tags:
         my $p = Parse::BBCode->new({
                 tags => {
-                    url => '<a href="%{link}A">%{parse}s</a>',
+                    # load the default tags
+                    Parse::BBCode::HTML->defaults,
+                
+                    # add/override tags
+                    url => 'url:<a href="%{link}A">%{parse}s</a>',
                     i   => '<i>%{parse}s</i>',
                     b   => '<b>%{parse}s</b>',
                     noparse => '<pre>%{html}s</pre>',
@@ -26,7 +29,7 @@ SYNOPSIS
                             $content = highlight_perl($content);
                         }
                         else {
-                            $content = Parse::BBCode::escape_html($content);
+                            $content = Parse::BBCode::escape_html($$content);
                         }
                         "<tt>$content</tt>"
                     },
@@ -45,7 +48,8 @@ SYNOPSIS
 
 DESCRIPTION
     Note: This module is still experimental, the syntax is subject to
-    change. I'm open for any suggestions on how to improve the syntax.
+    change. I'm open for any suggestions on how to improve the syntax. See
+    "TODO" for what might change.
 
     I wrote this module because HTML::BBCode is not extendable (or I didn't
     see how) and BBCode::Parser seemed good at the first glance but has some
@@ -163,15 +167,15 @@ DESCRIPTION
         my $p = Parse::BBCode->new({
                 tags => {
                     '' => sub {
-                        my $e = Parse::BBCode::escape_html($_[1]);
+                        my $e = Parse::BBCode::escape_html($_[2]);
                         $e =~ s/\r?\n|\r/<br>\n/g;
                         $e
                     },
                     i   => '<i>%s</i>',
                     b   => '<b>%{parse}s</b>',
                     size => '<font size="%a">%{parse}s</font>',
-                    url => '<a href="%{link}A">%{parse}s</a>',
-                    wikipedia => '<a href="http://wikipedia.../?search=%{uri}A">%{parse}s</a>',
+                    url => 'url:<a href="%{link}A">%{parse}s</a>',
+                    wikipedia => 'url:<a href="http://wikipedia.../?search=%{uri}A">%{parse}s</a>',
                     noparse => '<pre>%{html}s</pre>',
                     quote => 'block:<blockquote>%s</blockquote>',
                     code => {
@@ -182,12 +186,17 @@ DESCRIPTION
                                 $content = highlight_perl($content);
                             }
                             else {
-                                $content = Parse::BBCode::escape_html($content);
+                                $content = Parse::BBCode::escape_html($$content);
                             }
                             "<tt>$content</tt>"
                         },
                         parse => 0,
                         class => 'block',
+                    },
+                    hr => {
+                        class => 'block',
+                        output => '<hr>',
+                        single => 1,
                     },
                 },
             }
@@ -238,12 +247,18 @@ DESCRIPTION
         So %a stands for the tag attribute. By default it will be HTML
         escaped.
 
-    %A, "%{link}A"
-            url => '<a href="%{link}a">%{parse}s</a>'
+    url tag, %A, "%{link}A"
+            url => 'url:<a href="%{link}a">%{parse}s</a>'
 
-        Here you can see how to apply a special escape. The attribute
-        defined with "%{link}a" is checked for a valid URL. "javascript:"
-        will be filtered.
+        the first thing you can see is the "url:" at the beginning - this
+        defines the url tag as a tag with the class 'url', and urls must not
+        be nested. So this class definition is mainly there to prevent
+        generating wrong HTML. if you nest url tags only the outer one will
+        be parsed.
+
+        another thing you can see is how to apply a special escape. The
+        attribute defined with "%{link}a" is checked for a valid URL.
+        "javascript:" will be filtered.
 
             [url=/foo.html]a link[/url]
             turns out as
@@ -262,13 +277,13 @@ DESCRIPTION
         attribute as a fallback. You probably need this in all url-like
         tags:
 
-            url => '<a href="%{link}A">%{parse}s</a>',
+            url => 'url:<a href="%{link}A">%{parse}s</a>',
 
     "%{uri}A"
         You might want to define your own urls, e.g. for wikipedia
         references:
 
-            wikipedia => '<a href="http://wikipedia/?search=%{uri}A">%{parse}s</a>',
+            wikipedia => 'url:<a href="http://wikipedia/?search=%{uri}A">%{parse}s</a>',
 
         "%{uri}A" will uri-encode the searched term:
 
@@ -349,6 +364,22 @@ DESCRIPTION
         attribute fallback which is set to the content if the attribute is
         empty. The fourth argument is just for convenience.
 
+    Single-Tags
+        Sometimes you might want single tags like for a horizontal line:
+
+            hr => {
+                class => 'block',
+                output => '<hr>',
+                single => 1,
+            },
+
+        The hr-Tag is a block tag (should not be inside inline tags), and it
+        has no closing tag (option "single")
+
+            [hr]
+            Output:
+            <hr>
+
 ESCAPES
         my $p = Parse::BBCode->new(
             ...
@@ -368,7 +399,28 @@ ESCAPES
     escapes.
 
 TODO
-    Add a bbcode-to-textile module.
+    BBCode to Textile|Markdown
+        There is a Parse::BBCode::Markdown module which is only roughly
+        tested.
+
+    API The main syntax is likely to stay, only the API for callbacks might
+        change. At the moment it is not possible to add callbacks to the
+        parsing process, only for the rendering phase. It is also not
+        possible to declare your own attribute syntax, for example
+
+            [quote=nickname date]
+
+        Attributes always have to look like:
+
+            [tag=main_attribute other=foo]...
+            [tag="main_attribute" other="foo"]...
+
+    Redirects for url tags
+        In a forum you might want to prefix links and images with a redirect
+        script so that the actual referrer will be hidden from the target
+        url. This is extremely helpful if you are using session-ids in your
+        urls. I plan to add an option for url tags which lets you define the
+        redirect-script url.
 
 REQUIREMENTS
     perl >= 5.6.1, Class::Accessor::Fast, URI::Escape
@@ -391,6 +443,8 @@ AUTHOR
 CREDITS
     Thanks to Moritz Lenz for his suggestions about the implementation and
     the test cases.
+
+    Viacheslav Tikhanovskii
 
 COPYRIGHT AND LICENSE
     Copyright (C) 2008 by Tina Mueller

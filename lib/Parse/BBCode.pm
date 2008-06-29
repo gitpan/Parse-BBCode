@@ -10,7 +10,7 @@ __PACKAGE__->mk_accessors(qw/ tags allowed compiled plain strict_attributes
 use Data::Dumper;
 use Carp;
 
-our $VERSION = '0.05';
+our $VERSION = '0.06';
 
 my %defaults = (
     strict_attributes => 1,
@@ -99,18 +99,19 @@ sub _compile_def {
     my $new_def = {};
     my $output = $def;
     my $close = 1;
+    my $class = 'inline';
     if (ref $def eq 'HASH') {
         $new_def = { %$def };
         $output = delete $new_def->{output};
         $parse = $new_def->{parse};
         $close = $new_def->{close} if exists $new_def->{close};
+        $class = $new_def->{class} if exists $new_def->{class};
     }
     else {
     }
     # we have a string, compile
     #warn __PACKAGE__.':'.__LINE__.": $key => $output\n";
-    my $class = 'inline';
-    if ($output =~ s/^(inline|block)://) {
+    if ($output =~ s/^(inline|block|url)://) {
         $class = $1;
     }
     my @parts = split m!($re_split)!, $output;
@@ -207,6 +208,7 @@ sub parse {
         #warn __PACKAGE__.':'.__LINE__.$".Data::Dumper->Dump([\@opened], ['opened']);
     };
     my $callback_found_tag;
+    my $in_url = 0;
     $callback_found_tag = sub {
         my ($tag) = @_;
         #warn __PACKAGE__.':'.__LINE__.$".Data::Dumper->Dump([\$tag], ['tag']);
@@ -215,9 +217,8 @@ sub parse {
             my $o = $opened[-1];
             my $class = $o->get_class;
             #warn __PACKAGE__.':'.__LINE__.": tag $tag\n";
-            if (ref $tag and $class eq 'inline' and $tag->get_class eq 'block') {
+            if (ref $tag and $class =~ m/inline|url/ and $tag->get_class eq 'block') {
                 $self->_add_error('block_inline', $tag);
-                #warn __PACKAGE__.':'.__LINE__.": !!!!!!!!!!! $o\n";
                 pop @opened;
                 #warn __PACKAGE__.':'.__LINE__.$".Data::Dumper->Dump([\$o], ['o']);
                 if ($self->get_close_open_tags) {
@@ -248,6 +249,8 @@ sub parse {
     };
     my @class = 'block';
     while ($text) {
+        $in_url = grep { $_->get_class eq 'url' } @opened;
+        #warn __PACKAGE__.':'.__LINE__.$".Data::Dumper->Dump([\$in_url], ['in_url']);
         #warn __PACKAGE__.':'.__LINE__.": ============= match $text\n";
         my ($before, $tag, $after) = split m{ \[ ($re) (?=\b|\]|\=) }x, $text, 2;
         #warn __PACKAGE__.':'.__LINE__.$".Data::Dumper->Dump([\@opened], ['opened']);
@@ -305,22 +308,31 @@ sub parse {
             #warn __PACKAGE__." === before=$before ($tag)\n";
             $callback_found_text->($before);
         }
+
         if ($after) {
+            # found start of a tag
             #warn __PACKAGE__.':'.__LINE__.": find attribute for $tag\n";
             if ($after =~ s/^(=[^\]]*)?]//) {
                 my $attr = $1;
                 $attr = '' unless defined $attr;
                 #warn __PACKAGE__.':'.__LINE__.": found attribute for $tag: $attr\n";
                 my $open = Parse::BBCode::Tag->new({
-                        name => lc $tag,
-                        attr => [],
+                        name    => lc $tag,
+                        attr    => [],
                         content => [],
-                        start => "[$tag$attr]",
-                        close => $defs->{lc $tag}->{close},
-                        class => $defs->{lc $tag}->{class},
+                        start   => "[$tag$attr]",
+                        close   => $defs->{lc $tag}->{close},
+                        class   => $defs->{lc $tag}->{class},
+                        single  => $defs->{lc $tag}->{single},
+                        in_url  => $in_url,
                     });
                 my $success = $self->_validate_attr($open, $attr);
-                if ($success) {
+                my $nested_url = $in_url && $open->get_class eq 'url';
+                if ($success && $open->get_single && !$nested_url) {
+                    $self->_finish_tag($open, '');
+                    $callback_found_tag->($open);
+                }
+                elsif ($success && !$nested_url) {
                     push @opened, $open;
                     my $def = $defs->{lc $tag};
                     #warn __PACKAGE__.':'.__LINE__.": $tag $def\n";
@@ -339,7 +351,6 @@ sub parse {
                             #warn __PACKAGE__.':'.__LINE__.": CONTENT $content\n";
                             my $finished = pop @opened;
                             $finished->set_content([$content]);
-                            # TODO
                             $self->_finish_tag($finished, $end);
                             $callback_found_tag->($finished);
                         }
@@ -535,20 +546,23 @@ Parse::BBCode - Module to turn BBCode into HTML or plain text
 
 =head1 SYNOPSIS
 
-To parse a bbcode string:
+To parse a bbcode string, set up a parser with the default HTML defintions
+of L<Parse::BBCode::HTML>:
 
     use Parse::BBCode;
     my $p = Parse::BBCode->new();
     my $code = 'some [b]b code[/b]';
     my $parsed = $p->render($code);
 
-This sets up a parser with the default HTML defintions
-of L<Parse::BBCode::HTML>.
+Or if you want to define your own tags:
 
-    # or if you want to define your own tags:
     my $p = Parse::BBCode->new({
             tags => {
-                url => '<a href="%{link}A">%{parse}s</a>',
+                # load the default tags
+                Parse::BBCode::HTML->defaults,
+                
+                # add/override tags
+                url => 'url:<a href="%{link}A">%{parse}s</a>',
                 i   => '<i>%{parse}s</i>',
                 b   => '<b>%{parse}s</b>',
                 noparse => '<pre>%{html}s</pre>',
@@ -559,7 +573,7 @@ of L<Parse::BBCode::HTML>.
                         $content = highlight_perl($content);
                     }
                     else {
-                        $content = Parse::BBCode::escape_html($content);
+                        $content = Parse::BBCode::escape_html($$content);
                     }
                     "<tt>$content</tt>"
                 },
@@ -581,6 +595,8 @@ of L<Parse::BBCode::HTML>.
 Note: This module is still experimental, the syntax is subject to
 change. I'm open for any suggestions on how to improve the
 syntax.
+See L<"TODO"> for what might change.
+
 
 I wrote this module because L<HTML::BBCode> is not extendable (or
 I didn't see how) and L<BBCode::Parser> seemed good at the first
@@ -721,15 +737,15 @@ Here is an example of all the current definition possibilities:
     my $p = Parse::BBCode->new({
             tags => {
                 '' => sub {
-                    my $e = Parse::BBCode::escape_html($_[1]);
+                    my $e = Parse::BBCode::escape_html($_[2]);
                     $e =~ s/\r?\n|\r/<br>\n/g;
                     $e
                 },
                 i   => '<i>%s</i>',
                 b   => '<b>%{parse}s</b>',
                 size => '<font size="%a">%{parse}s</font>',
-                url => '<a href="%{link}A">%{parse}s</a>',
-                wikipedia => '<a href="http://wikipedia.../?search=%{uri}A">%{parse}s</a>',
+                url => 'url:<a href="%{link}A">%{parse}s</a>',
+                wikipedia => 'url:<a href="http://wikipedia.../?search=%{uri}A">%{parse}s</a>',
                 noparse => '<pre>%{html}s</pre>',
                 quote => 'block:<blockquote>%s</blockquote>',
                 code => {
@@ -740,12 +756,17 @@ Here is an example of all the current definition possibilities:
                             $content = highlight_perl($content);
                         }
                         else {
-                            $content = Parse::BBCode::escape_html($content);
+                            $content = Parse::BBCode::escape_html($$content);
                         }
                         "<tt>$content</tt>"
                     },
                     parse => 0,
                     class => 'block',
+                },
+                hr => {
+                    class => 'block',
+                    output => '<hr>',
+                    single => 1,
                 },
             },
         }
@@ -802,11 +823,17 @@ C<%{parse}s> is the same as C<%s> because 'parse' is the default.
 So %a stands for the tag attribute. By default it will be HTML
 escaped.
 
-=item C<%A>, C<%{link}A>
+=item url tag, C<%A>, C<%{link}A>
 
-    url => '<a href="%{link}a">%{parse}s</a>'
+    url => 'url:<a href="%{link}a">%{parse}s</a>'
 
-Here you can see how to apply a special escape. The attribute
+the first thing you can see is the C<url:> at the beginning - this
+defines the url tag as a tag with the class 'url', and urls must not
+be nested. So this class definition is mainly there to prevent
+generating wrong HTML. if you nest url tags only the outer one will
+be parsed.
+
+another thing you can see is how to apply a special escape. The attribute
 defined with C<%{link}a> is checked for a valid URL.
 C<javascript:> will be filtered.
 
@@ -827,14 +854,14 @@ content you should use C<%A> instead of C<%a> which takes
 the content as the attribute as a fallback. You probably
 need this in all url-like tags:
 
-    url => '<a href="%{link}A">%{parse}s</a>',
+    url => 'url:<a href="%{link}A">%{parse}s</a>',
 
 =item C<%{uri}A>
 
 You might want to define your own urls, e.g. for wikipedia
 references:
 
-    wikipedia => '<a href="http://wikipedia/?search=%{uri}A">%{parse}s</a>',
+    wikipedia => 'url:<a href="http://wikipedia/?search=%{uri}A">%{parse}s</a>',
 
 C<%{uri}A> will uri-encode the searched term:
 
@@ -919,6 +946,23 @@ scalar reference and the fourth argument is the attribute fallback which
 is set to the content if the attribute is empty. The fourth argument
 is just for convenience.
 
+=item Single-Tags
+
+Sometimes you might want single tags like for a horizontal line:
+
+    hr => {
+        class => 'block',
+        output => '<hr>',
+        single => 1,
+    },
+
+The hr-Tag is a block tag (should not be inside inline tags),
+and it has no closing tag (option C<single>)
+
+    [hr]
+    Output:
+    <hr>
+
 =back
 
 =head1 ESCAPES
@@ -941,7 +985,38 @@ See L<Parse::BBCode::HTML/default_escapes> for the detailed list of escapes.
 
 =head1 TODO
 
-Add a bbcode-to-textile module.
+=over 4
+
+=item BBCode to Textile|Markdown
+
+There is a L<Parse::BBCode::Markdown> module which is only
+roughly tested.
+
+=item API
+
+The main syntax is likely to stay, only the API for callbacks
+might change. At the moment it is not possible to add callbacks
+to the parsing process, only for the rendering phase. It is
+also not possible to declare your own attribute syntax, for
+example
+
+    [quote=nickname date]
+
+Attributes always have to look like:
+
+    [tag=main_attribute other=foo]...
+    [tag="main_attribute" other="foo"]...
+
+=item Redirects for url tags
+
+In a forum you might want to prefix links and images with a redirect
+script so that the actual referrer will be hidden from the target
+url. This is extremely helpful if you are using session-ids in your
+urls.
+I plan to add an option for url tags which lets you define the
+redirect-script url.
+
+=back
 
 =head1 REQUIREMENTS
 
@@ -968,6 +1043,8 @@ Tina Mueller
 
 Thanks to Moritz Lenz for his suggestions about the implementation
 and the test cases.
+
+Viacheslav Tikhanovskii
 
 =head1 COPYRIGHT AND LICENSE
 

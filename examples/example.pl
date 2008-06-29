@@ -2,7 +2,6 @@
 use strict;
 use warnings;
 use Data::Dumper;
-use lib 'blib/lib';
 use Parse::BBCode;
 
 my %tag_def_html = (
@@ -14,8 +13,8 @@ my %tag_def_html = (
             "<code>$c</code>"
         },
     },
-    perlmonks => '<a href="http://www.perlmonks.org/?node=%{uri|html}a">%{parse}s</a>',
-    url => '<a href="%{link}a">%{parse}s</a>',
+    perlmonks => 'url:<a href="http://www.perlmonks.org/?node=%{uri|html}a">%{parse}s</a>',
+    url => 'url:<a href="%{link}a">%{parse}s</a>',
     i   => '<i>%{parse}s</i>',
     b   => '<b>%{parse}s</b>',
 );

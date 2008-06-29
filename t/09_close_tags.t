@@ -1,4 +1,5 @@
-use Test::More tests => 8;
+use Test::More tests => 9;
+use Test::NoWarnings;
 use Parse::BBCode;
 use strict;
 use warnings;

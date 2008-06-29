@@ -9,6 +9,7 @@ WriteMakefile
                            'Class::Accessor::Fast' => '0',
                            'Data::Dumper' => '0',
                            'Test::More' => '0',
+                           'Test::NoWarnings' => '0',
                            'URI::Escape' => '0',
                            'strict' => '0',
                            'warnings' => '0'

@@ -3,6 +3,7 @@ lib/Parse/BBCode.pm
 lib/Parse/BBCode/Tag.pm
 lib/Parse/BBCode/HTML.pm
 lib/Parse/BBCode/XHTML.pm
+lib/Parse/BBCode/Markdown.pm
 Makefile.PL
 MANIFEST			This list of files
 META.yml
@@ -17,6 +18,7 @@ t/07_invalid.t
 t/08_various_tags.t
 t/09_close_tags.t
 t/10_xhtml.t
+t/11_markdown.t
 examples/example.pl
 examples/bench.pl
 examples/compare.html

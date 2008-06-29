@@ -1,5 +1,10 @@
 Revision history for Perl module Parse::BBCode
 
+0.06 Sun Jun 29 21:49:13 CEST 2008
+So 29. Jun 21:49:00 CEST 2008
+- New Feature: Added single-tags like [hr], like Viacheslav Tikhanovskii suggested
+- New Feature: Added url-class for tags
+
 0.05 Mon Jun  2 19:58:26 CEST 2008
 - Fixed test
 - Changed plaintext subroutine calling arguments
