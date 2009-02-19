@@ -10,7 +10,7 @@ __PACKAGE__->mk_accessors(qw/ tags allowed compiled plain strict_attributes
 use Data::Dumper;
 use Carp;
 
-our $VERSION = '0.06';
+our $VERSION = '0.07';
 
 my %defaults = (
     strict_attributes => 1,
@@ -248,7 +248,7 @@ sub parse {
 
     };
     my @class = 'block';
-    while ($text) {
+    while (defined $text and length $text) {
         $in_url = grep { $_->get_class eq 'url' } @opened;
         #warn __PACKAGE__.':'.__LINE__.$".Data::Dumper->Dump([\$in_url], ['in_url']);
         #warn __PACKAGE__.':'.__LINE__.": ============= match $text\n";
@@ -273,7 +273,7 @@ sub parse {
                     $current_open_re = join '|', map {
                         quotemeta $_->get_name
                     } @opened;
-                    if ($try->get_name eq $name) {
+                    if ($try->get_name eq lc $name) {
                         $f = $try;
                         last;
                     }

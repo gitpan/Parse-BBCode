@@ -31,7 +31,7 @@ my %default_tags = (
         close => 0,
     },
     'quote' => 'block:<div class="bbcode_quote_header">%{html}a:
-<div class="bbcode_quote_body">%s</div</div>',
+<div class="bbcode_quote_body">%s</div></div>',
     'code'  => 'block:<div class="bbcode_code_header">%{html}a:
 <div class="bbcode_code_body">%{html}s</div></div>',
     'noparse' => '%{html}s',

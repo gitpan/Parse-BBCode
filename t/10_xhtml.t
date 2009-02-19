@@ -44,7 +44,7 @@ my @tests = (
     [ q#[list=1][*]first[*]second[*]third[/list]#,
         q#<ul><li>first</li><li>second</li><li>third</li></ul># ],
     [ q#[quote=who]cite[/quote]#,
-        q#<div class="bbcode_quote_header">who:<div class="bbcode_quote_body">cite</div</div># ],
+        q#<div class="bbcode_quote_header">who:<div class="bbcode_quote_body">cite</div></div># ],
     [ q#[code]use strict;[/code]#,
         q#<div class="bbcode_code_header">:<div class="bbcode_code_body">use strict;</div></div># ],
     [ q#[noparse]foo[b][/noparse]#,

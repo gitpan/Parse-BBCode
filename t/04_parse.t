@@ -1,5 +1,5 @@
 use Data::Dumper;
-use Test::More tests => 26;
+use Test::More tests => 28;
 use Test::NoWarnings;
 use Parse::BBCode;
 use strict;
@@ -42,11 +42,13 @@ my $bbc2html_block = Parse::BBCode->new({
         },
     }
 );
-
+local $_ = 23;
 
 my @tests = (
     [ q#[B]bold? [test#,
         q#[B]bold? [test# ],
+    [ q#[B]bold[/B]#,
+        q#<b>bold</b># ],
     [ q#[i=23]italic [b]bold italic <html>[/b][/i]# . $/,
         q#<i>italic <b>bold italic &lt;html&gt;</b></i><br># ],
     [ q#[U][noparse]<html>[u][c][/noparse][/u]# . $/,
@@ -74,7 +76,7 @@ my @tests = (
     [ q#[list=1][*]first[*]second[*]third[/list]#,
         q#<ul><li>first</li><li>second</li><li>third</li></ul># ],
     [ q#[quote=who]cite[/quote]#,
-        q#<div class="bbcode_quote_header">who:<div class="bbcode_quote_body">cite</div</div># ],
+        q#<div class="bbcode_quote_header">who:<div class="bbcode_quote_body">cite</div></div># ],
     [ q#[code]use strict;[/code]#,
         q#<div class="bbcode_code_header">:<div class="bbcode_code_body">use strict;</div></div># ],
     [ q#[perlmonks=123]foo <html>[i]italic[/i][/perlmonks]# . $/,
@@ -91,6 +93,8 @@ my @tests = (
         q#outer</p><p>newline<br> <i>inner<br><br>newline</i>#, undef, $bbc2html_block ],
     [ qq#[url=http://foo/][url=http://bar/]test[/url][/url]#,
         q#<a href="http://foo/" rel="nofollow">[url=http://bar/]test</a>[/url]#, ],
+    [ q#0#,
+        q#0#, ],
 );
 for my $test (@tests) {
     my ($text, $exp, $forbid, $parser) = @$test;

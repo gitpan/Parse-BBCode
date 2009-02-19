@@ -1,7 +1,15 @@
 Revision history for Perl module Parse::BBCode
 
+0.07 Thu Feb 19 12:03:23 CET 2009
+- Bugfix: Missing dependency declaration
+  http://rt.cpan.org/Public/Bug/Display.html?id=43365
+- Bugfix: Case insensitive for closing tags
+  http://rt.cpan.org/Public/Bug/Display.html?id=42781
+- Bugfix: Syntax error in output-HTML
+  http://rt.cpan.org/Public/Bug/Display.html?id=42780
+- Bugfix: Test::NoWarnings removed in test
+
 0.06 Sun Jun 29 21:49:13 CEST 2008
-So 29. Jun 21:49:00 CEST 2008
 - New Feature: Added single-tags like [hr], like Viacheslav Tikhanovskii suggested
 - New Feature: Added url-class for tags
 
