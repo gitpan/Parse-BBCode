@@ -1,5 +1,11 @@
 Revision history for Perl module Parse::BBCode
 
+0.08 Sun Mar  8 23:05:45 CET 2009
+- Bugfix: two url tags following each other remained the
+  second one unparsed
+- New feature: Access to attributes like [img=url align=left]
+  through %{align}attr
+
 0.07 Thu Feb 19 12:03:23 CET 2009
 - Bugfix: Missing dependency declaration
   http://rt.cpan.org/Public/Bug/Display.html?id=43365

@@ -1,5 +1,5 @@
 use Data::Dumper;
-use Test::More tests => 28;
+use Test::More tests => 30;
 use Test::NoWarnings;
 use Parse::BBCode;
 use strict;
@@ -19,6 +19,7 @@ my $bbc2html = Parse::BBCode->new({
         tags => {
             Parse::BBCode::HTML->defaults,
             %tag_def_html,
+            'img'   => '<img src="%{html}A" alt="[%{html}s]" title="%{html}s" align="%{align}attr">',
         },
     }
 );
@@ -45,6 +46,10 @@ my $bbc2html_block = Parse::BBCode->new({
 local $_ = 23;
 
 my @tests = (
+    [ q#[img=foo align=center]test[/img]#,
+        q#<img src="foo" alt="[test]" title="test" align="center"># ],
+    [ q#[url=test]foo[/url] bla [url=test2]foo2[/url]#,
+        q#<a href="test" rel="nofollow">foo</a> bla <a href="test2" rel="nofollow">foo2</a>#],
     [ q#[B]bold? [test#,
         q#[B]bold? [test# ],
     [ q#[B]bold[/B]#,
@@ -54,7 +59,7 @@ my @tests = (
     [ q#[U][noparse]<html>[u][c][/noparse][/u]# . $/,
         q#<u>&lt;html&gt;[u][c]</u><br># ],
     [ q#[img=foo.jpg]desc <html>[/img]#,
-        q#<img src="foo.jpg" alt="[desc &lt;html&gt;]" title="desc &lt;html&gt;"># ],
+        q#<img src="foo.jpg" alt="[desc &lt;html&gt;]" title="desc &lt;html&gt;" align=""># ],
     [ q#[url=javascript:alert(123)]foo <html>[i]italic[/i][/url]#,
         q#<a href="" rel="nofollow">foo &lt;html&gt;<i>italic</i></a># ],
     [ q#[url=http://foo]foo <html>[i]italic[/i][/url]#,

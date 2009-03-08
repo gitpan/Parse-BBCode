@@ -10,7 +10,7 @@ __PACKAGE__->mk_accessors(qw/ tags allowed compiled plain strict_attributes
 use Data::Dumper;
 use Carp;
 
-our $VERSION = '0.07';
+our $VERSION = '0.08';
 
 my %defaults = (
     strict_attributes => 1,
@@ -33,8 +33,8 @@ sub new {
     return $self;
 }
 
-my $re_split = qr{ % (?:\{ (?:[a-zA-Z\|]+) \})? (?:[Aas]) }x;
-my $re_cmp = qr{ % (?:\{ ([a-zA-Z\|]+) \})? ([Aas]) }x;
+my $re_split = qr{ % (?:\{ (?:[a-zA-Z\|]+) \})? (?:attr|[Aas]) }x;
+my $re_cmp = qr{ % (?:\{ ([a-zA-Z\|]+) \})? (attr|[Aas]) }x;
 
 sub forbid {
     my ($self, @tags) = @_;
@@ -133,7 +133,7 @@ sub _compile_def {
         #warn __PACKAGE__.':'.__LINE__.$".Data::Dumper->Dump([\@compiled], ['compiled']);
     }
     my $code = sub {
-        my ($self, $attr, $string, $fallback) = @_;
+        my ($self, $attr, $string, $fallback, $tag) = @_;
         my $out = '';
         for my $c (@compiled) {
 
@@ -144,8 +144,18 @@ sub _compile_def {
             # tag attribute or content
             else {
                 my ($escapes, $type) = @$c;
-                my $var;
-                if ($type eq 'a') {
+                my $var = '';
+                my $attributes = $tag->get_attr;
+                if ($type eq 'attr' and @$attributes > 1) {
+                    my $name = shift @$escapes;
+                    for my $item (@$attributes[1 .. $#$attributes]) {
+                        if ($item->[0] eq $name) {
+                            $var = $item->[1];
+                            last;
+                        }
+                    }
+                }
+                elsif ($type eq 'a') {
                     $var = $attr;
                 }
                 elsif ($type eq 'A') {
@@ -308,6 +318,7 @@ sub parse {
             #warn __PACKAGE__." === before=$before ($tag)\n";
             $callback_found_text->($before);
         }
+        $in_url = grep { $_->get_class eq 'url' } @opened;
 
         if ($after) {
             # found start of a tag
@@ -495,9 +506,7 @@ sub escape_html {
 sub _validate_attr {
     my ($self, $tag, $attr) = @_;
     $tag->set_attr_raw($attr);
-    #warn __PACKAGE__.':'.__LINE__.$".Data::Dumper->Dump([\$attr], ['attr']);
     my @array;
-    #warn __PACKAGE__.':'.__LINE__.$".Data::Dumper->Dump([\$attr], ['attr']);
     unless (length $attr) {
         $tag->set_attr([]);
         return 1;
@@ -1045,6 +1054,8 @@ Thanks to Moritz Lenz for his suggestions about the implementation
 and the test cases.
 
 Viacheslav Tikhanovskii
+
+Sascha Kiefer
 
 =head1 COPYRIGHT AND LICENSE
 
