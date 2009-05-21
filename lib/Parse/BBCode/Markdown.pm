@@ -6,7 +6,7 @@ use Carp qw(croak carp);
 use URI::Escape;
 use base qw/ Parse::BBCode /;
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 my %default_tags = (
     'b'     => '*%s*',
@@ -18,11 +18,12 @@ my %default_tags = (
     'email' => 'url:[%s](mailto:%{email}A)',
     'size'  => '%s',
     'color' => '%s',
-        'list'  => 'block:%{parse}s',
+    'list'  => 'block:%{parse}s',
     '*'     => {
         parse => 1,
         output => '* %s',
         close => 0,
+        class => 'block',
     },
     quote => {
         parse => 1,

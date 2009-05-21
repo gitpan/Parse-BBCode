@@ -10,7 +10,7 @@ __PACKAGE__->mk_accessors(qw/ tags allowed compiled plain strict_attributes
 use Data::Dumper;
 use Carp;
 
-our $VERSION = '0.08';
+our $VERSION = '0.09';
 
 my %defaults = (
     strict_attributes => 1,
@@ -22,14 +22,20 @@ sub new {
     unless ($args{tags}) {
         $args{tags} = { $class->defaults };
     }
+    else {
+        $args{tags} = { %{ $args{tags} } };
+    }
     unless ($args{escapes}) {
         $args{escapes} = {$class->default_escapes };
+    }
+    else {
+        $args{escapes} = { %{ $args{escapes} } }
     }
     my $self = $class->SUPER::new({
         %defaults,
         %args
     });
-    $self->set_allowed([ keys %{ $self->get_tags } ]);
+    $self->set_allowed([ grep { length } keys %{ $self->get_tags } ]);
     return $self;
 }
 
@@ -172,6 +178,14 @@ sub _compile_def {
                     my $sub = $esc->{$e};
                     if ($sub) {
                         $var = $sub->($self, $c, $var);
+                        unless (defined $var) {
+                            # if escape returns undef, we return it unparsed
+                            return $tag->get_start
+                                . (join '', map {
+                                    $self->render_tree($_);
+                                } @{ $tag->get_content })
+                                . $tag->get_end;
+                        }
                     }
                 }
                 $out .= $var;
@@ -213,7 +227,13 @@ sub parse {
             $o->add_content($text);
         }
         else {
-            push @tags, $text;
+            if (@tags and !ref $tags[-1]) {
+                # text tag, concatenate
+                $tags[-1] .= $text;
+            }
+            else {
+                push @tags, $text;
+            }
         }
         #warn __PACKAGE__.':'.__LINE__.$".Data::Dumper->Dump([\@opened], ['opened']);
     };
@@ -976,13 +996,13 @@ and it has no closing tag (option C<single>)
 
 =head1 ESCAPES
 
-    my $p = Parse::BBCode->new(
+    my $p = Parse::BBCode->new({
         ...
         escapes => {
             link => sub {
             },
         },
-    );
+    });
 
 You can define or override escapes. Default escapes are html, uri, link, email,
 htmlcolor, num.

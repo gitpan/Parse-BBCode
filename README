@@ -381,13 +381,13 @@ DESCRIPTION
             <hr>
 
 ESCAPES
-        my $p = Parse::BBCode->new(
+        my $p = Parse::BBCode->new({
             ...
             escapes => {
                 link => sub {
                 },
             },
-        );
+        });
 
     You can define or override escapes. Default escapes are html, uri, link,
     email, htmlcolor, num. An escape functions as a validator and filter.

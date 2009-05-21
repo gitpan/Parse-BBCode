@@ -1,5 +1,5 @@
 use Data::Dumper;
-use Test::More tests => 30;
+use Test::More tests => 33;
 use Test::NoWarnings;
 use Parse::BBCode;
 use strict;
@@ -46,6 +46,8 @@ my $bbc2html_block = Parse::BBCode->new({
 local $_ = 23;
 
 my @tests = (
+    [ q#[img://23]#,
+        q#[img://23]# ],
     [ q#[img=foo align=center]test[/img]#,
         q#<img src="foo" alt="[test]" title="test" align="center"># ],
     [ q#[url=test]foo[/url] bla [url=test2]foo2[/url]#,
@@ -61,7 +63,7 @@ my @tests = (
     [ q#[img=foo.jpg]desc <html>[/img]#,
         q#<img src="foo.jpg" alt="[desc &lt;html&gt;]" title="desc &lt;html&gt;" align=""># ],
     [ q#[url=javascript:alert(123)]foo <html>[i]italic[/i][/url]#,
-        q#<a href="" rel="nofollow">foo &lt;html&gt;<i>italic</i></a># ],
+        q#[url=javascript:alert(123)]foo &lt;html&gt;<i>italic</i>[/url]# ],
     [ q#[url=http://foo]foo <html>[i]italic[/i][/url]#,
         q#<a href="http://foo" rel="nofollow">foo &lt;html&gt;<i>italic</i></a># ],
     [ q#[email=no"mail]mail [i]me[/i][/email]#,
@@ -100,6 +102,8 @@ my @tests = (
         q#<a href="http://foo/" rel="nofollow">[url=http://bar/]test</a>[/url]#, ],
     [ q#0#,
         q#0#, ],
+    [ q# [] #,
+        q# [] #, ],
 );
 for my $test (@tests) {
     my ($text, $exp, $forbid, $parser) = @$test;
@@ -129,3 +133,11 @@ my $allowed = $bbc2html->get_allowed;
 ok(
     (!grep { $_ eq 'foobar' } @$allowed),
     "permit() an unsupported tag");
+
+my %tags = Parse::BBCode->defaults;
+my $bb1 = Parse::BBCode->new({ tags => \%tags });
+my $bb2 = Parse::BBCode->new({ tags => \%tags });
+my $render1 = $bb1->render("\n");
+my $render2 = $bb2->render("\n");
+cmp_ok($render2, 'eq', $render1, "don't change parameter hash");
+

@@ -1,5 +1,5 @@
 use lib 'lib';
-use Test::More tests => 28;
+use Test::More tests => 29;
 use Test::NoWarnings;
 use Parse::BBCode;
 use strict;
@@ -48,11 +48,12 @@ my $p = Parse::BBCode->new({
                     return $text;
                 },
             },
-            list => '<ul>%{parse}s</ul>',
+            'list'  => 'block:<ul>%{parse}s</ul>',
             '*' => {
                 parse => 1,
                 output => '<li>%s</li>',
                 close => 0,
+                class => 'block',
             },
             'img' => '<img src="%{html}A" alt="%{html}s" title="%{html}s">',
             hr => {
@@ -98,6 +99,8 @@ my @tests = (
         q#<ul><li>first</li><li>second with [url]foo</li><li>third</li></ul># ],
     [ q#[list=1][*]first[*]second with [url]foo and [b]bold[/b][*]third[/list]#,
         q#<ul><li>first</li><li>second with [url]foo and <b>bold</b></li><li>third</li></ul># ],
+    [ q#[list][*]a[list][*]c1[/list][/list]#,
+        q#<ul><li>a<ul><li>c1</li></ul></li></ul># ],
     [ q#[img]/path/to/image.png[/img]#,
         q#<img src="/path/to/image.png" alt="/path/to/image.png" title="/path/to/image.png"># ],
     [ q#[img=/path/to/image.png]description[/img]#,

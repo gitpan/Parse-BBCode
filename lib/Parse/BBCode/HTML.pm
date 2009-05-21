@@ -7,7 +7,7 @@ use URI::Escape;
 use base 'Exporter';
 our @EXPORT_OK = qw/ &defaults &default_escapes &optional /;
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 my $email_valid = 0;
 eval {
     require
@@ -29,6 +29,7 @@ my %default_tags = (
         parse => 1,
         output => '<li>%s</li>',
         close => 0,
+        class => 'block',
     },
     'quote' => 'block:<div class="bbcode_quote_header">%{html}a:
 <div class="bbcode_quote_body">%s</div></div>',
@@ -53,7 +54,7 @@ my %default_escapes = (
         }
         elsif ($var =~ m{^\s*[a-z]+\s*:}i) {
             # invalid
-            $var = '';
+            return;
         }
         $var = Parse::BBCode::escape_html($var);
         return $var;
@@ -111,7 +112,7 @@ Parse::BBCode::HTML - Provides HTML defaults for Parse::BBCode
 
     use Parse::BBCode;
     # my $p = Parse::BBCode->new();
-    my $p = Parse::BBCode->new(
+    my $p = Parse::BBCode->new({
         tags => {
             Parse::BBCode::HTML->defaults,
             # add your own tags here if needed
@@ -120,7 +121,7 @@ Parse::BBCode::HTML - Provides HTML defaults for Parse::BBCode
             Parse::BBCode::HTML->default_escapes,
             # add your own escapes here if needed
         },
-    );
+    });
     my $code = 'some [b]b code[/b]';
     my $parsed = $p->render($code);
 

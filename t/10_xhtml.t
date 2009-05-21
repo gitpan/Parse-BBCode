@@ -24,7 +24,7 @@ my @tests = (
     [ q#[img=foo.jpg]desc <html>[/img]#,
         q#<img src="foo.jpg" alt="[desc &lt;html&gt;]" title="desc &lt;html&gt;" /># ],
     [ q#[url=javascript:alert(123)]foo <html>[i]italic[/i][/url]#,
-        q#<a href="" rel="nofollow">foo &lt;html&gt;<i>italic</i></a># ],
+        q#[url=javascript:alert(123)]foo &lt;html&gt;<i>italic</i>[/url]# ],
     [ q#[url=http://foo]foo <html>[i]italic[/i][/url]#,
         q#<a href="http://foo" rel="nofollow">foo &lt;html&gt;<i>italic</i></a># ],
     [ q#[email=no"mail]mail [i]me[/i][/email]#,

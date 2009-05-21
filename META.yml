@@ -1,12 +1,12 @@
 ---
 name: Parse-BBCode
-version: 0.08
+version: 0.09
 author:
   - Tina Mueller
 abstract: Module to turn BBCode into HTML or plain text
 license: perl
 resources:
-  license: http://dev.perl.org/licenses/
+  license: ~
 requires:
   Carp: 0
   Class::Accessor::Fast: 0.25
@@ -21,20 +21,20 @@ build_requires:
 provides:
   Parse::BBCode:
     file: lib/Parse/BBCode.pm
-    version: 0.08
+    version: 0.09
   Parse::BBCode::HTML:
     file: lib/Parse/BBCode/HTML.pm
-    version: 0.02
+    version: 0.03
   Parse::BBCode::Markdown:
     file: lib/Parse/BBCode/Markdown.pm
-    version: 0.01
+    version: 0.02
   Parse::BBCode::Tag:
     file: lib/Parse/BBCode/Tag.pm
     version: 0.02
   Parse::BBCode::XHTML:
     file: lib/Parse/BBCode/XHTML.pm
     version: 0.01
-generated_by: Module::Build version 0.2808
+generated_by: Module::Build version 0.32
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.2.html
   version: 1.2
