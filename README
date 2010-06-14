@@ -16,8 +16,8 @@ SYNOPSIS
                 tags => {
                     # load the default tags
                     Parse::BBCode::HTML->defaults,
-                
-                    # add/override tags
+                    
+                # add/override tags
                     url => 'url:<a href="%{link}A">%{parse}s</a>',
                     i   => '<i>%{parse}s</i>',
                     b   => '<b>%{parse}s</b>',
@@ -106,6 +106,17 @@ DESCRIPTION
 
             I might add an option to define your own attribute validation.
             Contact me if you'd like to have this.
+
+        direct_attributes
+            Default: true
+
+            Normal tag syntax is:
+
+              [tag=val1 attr2=val2 ...]
+
+            If set to 0, tag syntax is
+
+              [tag attr2=val2 ...]
 
     render
         Input: The text to parse

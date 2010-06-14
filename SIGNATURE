@@ -1,5 +1,5 @@
 This file contains message digests of all files listed in MANIFEST,
-signed via the Module::Signature module, version 0.55.
+signed via the Module::Signature module, version 0.64.
 
 To verify the content in this distribution, first make sure you have
 Module::Signature installed, then type:
@@ -15,34 +15,34 @@ not run its Makefile.PL or Build.PL.
 Hash: SHA1
 
 SHA1 28c4143cca055bcd1ee9f57aeb0fbeac6cf9ef43 Build.PL
-SHA1 7148daf6e6bdcca138697e844b5a3106a28926d6 Changes
+SHA1 9170bb29679ea0add92d73afa8c6a089cfe8d5a4 Changes
 SHA1 f2454a7756c3a5b61f0f6f97333d0a053776d3b4 MANIFEST
-SHA1 271f4f222439f63bdee768da5bed5bfc65ceb72b META.yml
-SHA1 f8a6f46260c20d117e7a60fd47c079c14ee96845 Makefile.PL
-SHA1 8fecf0dc8b5324e3b759f67e31005f44ead5f56a README
+SHA1 3f7bca18c47b14ff718dcf9fd2ad2e621d73318f META.yml
+SHA1 49cb5cd45bef8442dee83ee83190ae0e91dbc9c0 Makefile.PL
+SHA1 e778e55518a586646ef9b22168ce23cff745b29d README
 SHA1 ff196be202fb416c4dd55e1cf8728ed43fc0912f examples/bench.pl
 SHA1 82684eddd56dd645646d72be2c9856528df02939 examples/compare.html
 SHA1 32559c2295d554ab69dfaf65286e59a88dd9f38f examples/example.pl
-SHA1 0d905cd2edb7524794bac04db0a2fd2a469cb913 lib/Parse/BBCode.pm
-SHA1 e52cc151011278e91c1726a88c3a290fd17f2250 lib/Parse/BBCode/HTML.pm
+SHA1 b250db8b0c2f17e57d249724e870d46fa53a72ed lib/Parse/BBCode.pm
+SHA1 2fed896785a95f131c0f7cbdc3f6b0783395c58a lib/Parse/BBCode/HTML.pm
 SHA1 7eaca44e279244bb3e61125c181271b241709630 lib/Parse/BBCode/Markdown.pm
 SHA1 e6222b47cc5fe9cd6301326f8863cc357fe406e8 lib/Parse/BBCode/Tag.pm
 SHA1 33c8c889e645b1175cb4e82bd10869a2ed597fac lib/Parse/BBCode/XHTML.pm
-SHA1 0bfa2515690e8bd6c674ac35ff18c2f242a831e6 t/01_load.t
+SHA1 b0d61e99ca9aa037970eac2f2237c7b30a837655 t/01_load.t
 SHA1 f99412021e18e066bfacc9e664ecf4099e416579 t/02_pod.t
-SHA1 3064708c06d18e6098f9f65ee048b7bcf5bb6f95 t/03_pod_cover.t
+SHA1 7df405a8e9cc0ffc08651c45730d0a8ed6163685 t/03_pod_cover.t
 SHA1 75888812700309a79aeb4b832d37ade5f7267833 t/04_parse.t
-SHA1 1291e3836150afd599ac460ab68e22799136499d t/05_balanced.t
-SHA1 136369a9d2b6d6b34a1f1c76dcf6e882852f310a t/06_unbalanced.t
-SHA1 3b2a1a9a7b29c9deb869c8b4a839f2455cc75ab7 t/07_invalid.t
-SHA1 25c0c4ecd1d603e4d132b26dd08cb1cb2b684aca t/08_various_tags.t
+SHA1 45d9fa41ea54b5ca7f8c6f2c8b5aa00e4422712f t/05_balanced.t
+SHA1 ff6b617bcdc841c91e463153fc1a98c7e145a8ba t/06_unbalanced.t
+SHA1 b97be6e20e0cf7f4a1cc86ca876d9b6c35273905 t/07_invalid.t
+SHA1 88d3aed86bb88416bfc3077f97b070c9166a0b29 t/08_various_tags.t
 SHA1 7254f5e0a4b30e2e1c057f6ec12245917a51e0ab t/09_close_tags.t
 SHA1 e7f150013f013b4f092582b19a18e44bf659102c t/10_xhtml.t
 SHA1 a826040385f2388960b75ab8fe92707ab2a84676 t/11_markdown.t
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.6 (GNU/Linux)
+Version: GnuPG v1.4.9 (GNU/Linux)
 
-iD8DBQFKFT6Vx8FzFTuJkhcRAkdqAJ9Dy2H8/EkPSFR2xuA4QIx7ktspFQCfRK9T
-XVYboOYGWA3E/gNrmsxFGxA=
-=dUM2
+iEYEARECAAYFAkwWabUACgkQx8FzFTuJkhdJEQCfY68To1cwqY8NM7P81pQGQ6ZX
+LiAAmgNFZE/T4ORjqiBlWLoMDgB+NWo5
+=B4vv
 -----END PGP SIGNATURE-----

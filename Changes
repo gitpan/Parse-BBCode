@@ -1,5 +1,13 @@
 Revision history for Perl module Parse::BBCode
 
+0.10 Mon Jun 14 19:34:12 CEST 2010
+- Bugfix: memleak
+  https://rt.cpan.org/Ticket/Display.html?id=54815
+- Feature: new option direct_attribute
+  https://rt.cpan.org/Ticket/Display.html?id=53353
+- Partly Bugfix: ignoring line breaks at list start/end
+  https://rt.cpan.org/Ticket/Display.html?id=55732
+
 0.09 Thu May 21 13:41:03 CEST 2009
 - Change: Leave tags unparsed where the escape function returns undef
   http://rt.cpan.org/Public/Bug/Display.html?id=43845

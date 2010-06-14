@@ -6,14 +6,16 @@ use Parse::BBCode::HTML qw/ &defaults &default_escapes &optional /;
 use base 'Class::Accessor::Fast';
 __PACKAGE__->follow_best_practice;
 __PACKAGE__->mk_accessors(qw/ tags allowed compiled plain strict_attributes
-    close_open_tags error tree escapes /);
+    close_open_tags error tree escapes direct_attribute /);
 use Data::Dumper;
 use Carp;
+my $scalar_util = eval "require Scalar::Util; 1";
 
-our $VERSION = '0.09';
+our $VERSION = '0.10';
 
 my %defaults = (
-    strict_attributes => 1,
+    strict_attributes   => 1,
+    direct_attribute    => 1,
 );
 sub new {
     my ($class, $args) = @_;
@@ -343,7 +345,11 @@ sub parse {
         if ($after) {
             # found start of a tag
             #warn __PACKAGE__.':'.__LINE__.": find attribute for $tag\n";
-            if ($after =~ s/^(=[^\]]*)?]//) {
+            if (
+                ($self->get_direct_attribute and $after =~ s/^(=[^\]]*)?]//)
+                    or
+                ($after =~ s/^( [^\]]*)?\]//)
+            ) {
                 my $attr = $1;
                 $attr = '' unless defined $attr;
                 #warn __PACKAGE__.':'.__LINE__.": found attribute for $tag: $attr\n";
@@ -423,6 +429,9 @@ sub parse {
             push @tags, @text;
         }
     }
+    if ($scalar_util) {
+        Scalar::Util::weaken($callback_found_tag);
+    }
     #warn __PACKAGE__.':'.__LINE__.": !!!!!!!!!!!! left text: '$text'\n";
     #warn __PACKAGE__.':'.__LINE__.$".Data::Dumper->Dump([\@tags], ['tags']);
     my $tree = Parse::BBCode::Tag->new({
@@ -432,6 +441,8 @@ sub parse {
         class => 'block',
         attr => [[]],
     });
+    # just to make sure no memleak if there's no Scalar::Util
+    undef $callback_found_tag;
     return $tree;
 }
 
@@ -531,7 +542,9 @@ sub _validate_attr {
         $tag->set_attr([]);
         return 1;
     }
-    $attr =~ s/^=//;
+    if ($self->get_direct_attribute) {
+        $attr =~ s/^=//;
+    }
     if ($self->get_strict_attributes and not length $attr) {
         return 0;
     }
@@ -692,6 +705,18 @@ An invalid attribute:
 
 I might add an option to define your own attribute validation. Contact me if
 you'd like to have this.
+
+=item direct_attributes
+
+Default: true
+
+Normal tag syntax is:
+
+  [tag=val1 attr2=val2 ...]
+
+If set to 0, tag syntax is
+
+  [tag attr2=val2 ...]
 
 =back
 

@@ -24,10 +24,23 @@ my %default_tags = (
     'email' => 'url:<a href="mailto:%{email}A">%s</a>',
     'size'  => '<span style="font-size: %{num}a">%s</span>',
     'color' => '<span style="color: %{htmlcolor}a">%s</span>',
-    'list'  => 'block:<ul>%{parse}s</ul>',
-    '*'     => {
+    'list'  => {
         parse => 1,
-        output => '<li>%s</li>',
+        class => 'block',
+        code => sub {
+            my ($parser, $attr, $content, $attribute_fallback, $tag) = @_;
+            $$content =~ s/^\n+//;
+            $$content =~ s/\n+\z//;
+            return "<ul>$$content</ul>";
+        },
+    },
+    '*' => {
+        parse => 1,
+        code => sub {
+            my ($parser, $attr, $content, $attribute_fallback, $tag) = @_;
+            $$content =~ s/\n+\z//;
+            return "<li>$$content</li>",
+        },
         close => 0,
         class => 'block',
     },

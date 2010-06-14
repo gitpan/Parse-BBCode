@@ -1,6 +1,4 @@
-use lib 'lib';
-use Test::More tests => 29;
-use Test::NoWarnings;
+use Test::More tests => 28;
 use Parse::BBCode;
 use strict;
 use warnings;
@@ -48,10 +46,23 @@ my $p = Parse::BBCode->new({
                     return $text;
                 },
             },
-            'list'  => 'block:<ul>%{parse}s</ul>',
+            'list'  => {
+                parse => 1,
+                class => 'block',
+                code => sub {
+                    my ($parser, $attr, $content, $attribute_fallback, $tag) = @_;
+                    $$content =~ s/^\n+//;
+                    $$content =~ s/\n+\z//;
+                    return "<ul>$$content</ul>";
+                },
+            },
             '*' => {
                 parse => 1,
-                output => '<li>%s</li>',
+                code => sub {
+                    my ($parser, $attr, $content, $attribute_fallback, $tag) = @_;
+                    $$content =~ s/\n+\z//;
+                    return "<li>$$content</li>",
+                },
                 close => 0,
                 class => 'block',
             },
@@ -89,8 +100,8 @@ my @tests = (
         q#[raw]some [b]bold[/b] text[/raw]|some [b]bold[/b] text|some <b>bold</b> text# ],
     [ q#[html=style color=red size="7"]big [b]bold[/b] text[/html]#,
         q#<font color="red" size="7">big <b>bold</b> text</font># ],
-    [ q#[list=1][*]first[*]second[*]third[/list]#,
-        q#<ul><li>first</li><li>second</li><li>third</li></ul># ],
+    [ qq#before\n[list=1]\n[*]first\n[*]second\n[*]third\n[/list]\nafter#,
+        qq#before\n<ul><li>first</li><li>second</li><li>third</li></ul>\nafter# ],
     [ q#[list=1][*]first with [url]foo[/url][*]second[*]third[/list]#,
         q#<ul><li>first with <a href="foo">foo</a></li><li>second</li><li>third</li></ul># ],
     [ q#[list=1][*]first[*]second with [url]foo[/url][*]third[/list]#,

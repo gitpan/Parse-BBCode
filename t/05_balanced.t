@@ -1,4 +1,3 @@
-use lib 'lib';
 use Test::More tests => 8;
 use Test::NoWarnings;
 use Parse::BBCode;
