@@ -21,7 +21,7 @@ my %default_tags = (
         $text =~ s{\r?\n|\r}{<br />\n}g;
         $text;
     },
-    'img'   => '<img src="%{html}A" alt="[%{html}s]" title="%{html}s" />',
+    'img'   => '<img src="%{link}A" alt="[%{html}s]" title="%{html}s" />',
 );
 my %optional_tags = (
     Parse::BBCode::HTML->optional(),

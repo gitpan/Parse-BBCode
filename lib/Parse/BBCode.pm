@@ -11,7 +11,7 @@ use Data::Dumper;
 use Carp;
 my $scalar_util = eval "require Scalar::Util; 1";
 
-our $VERSION = '0.10';
+our $VERSION = '0.11';
 
 my %defaults = (
     strict_attributes   => 1,
@@ -807,7 +807,7 @@ Here is an example of all the current definition possibilities:
                         my ($parser, $attr, $content, $attribute_fallback) = @_;
                         if ($attr eq 'perl') {
                             # use some syntax highlighter
-                            $content = highlight_perl($content);
+                            $content = highlight_perl($$content);
                         }
                         else {
                             $content = Parse::BBCode::escape_html($$content);

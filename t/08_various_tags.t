@@ -1,4 +1,4 @@
-use Test::More tests => 28;
+use Test::More tests => 29;
 use Parse::BBCode;
 use strict;
 use warnings;
@@ -66,7 +66,7 @@ my $p = Parse::BBCode->new({
                 close => 0,
                 class => 'block',
             },
-            'img' => '<img src="%{html}A" alt="%{html}s" title="%{html}s">',
+            'img' => '<img src="%{link}A" alt="%{html}s" title="%{html}s">',
             hr => {
                 class => 'block',
                 output => '<hr>',
@@ -128,6 +128,8 @@ my @tests = (
         q#text [b]with bold and <hr>line[/b]# ],
     [ q#text with bold and [hr]line#,
         q#text with bold and <hr>line# ],
+    [ q#[img]javascript:boo()[/img]#,
+        q#[img]javascript:boo()[/img]# ],
 );
 
 for (@tests) {

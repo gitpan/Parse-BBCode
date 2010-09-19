@@ -24,5 +24,11 @@ my $build = Module::Build->new(
     },
     create_readme      => 1,
     sign               => 1,
+    meta_merge => {
+        resources => {
+            license     => 'http://dev.perl.org/licenses/',
+            repository  => 'https://parse-bbcode.googlecode.com/svn',
+        },
+    },
 );
 $build->create_build_script;

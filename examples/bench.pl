@@ -6,7 +6,7 @@ use Data::Dumper;
 use Benchmark;
 
 my %loaded;
-for (qw/ BBCode::Parser Parse::BBCode HTML::BBCode HTML::BBReverse /) {
+for (qw/ BBCode::Parser Parse::BBCode HTML::BBCode HTML::BBReverse AUBBC /) {
     eval "use $_";
     unless ($@) {
         $loaded{$_} = $_->VERSION;
@@ -24,6 +24,11 @@ my $code = <<'EOM';
 [url=http://foo.example.org/]a link![/url]
 
 EOM
+
+sub create_au {
+    my $pb = AUBBC->new();
+    return $pb;
+}
 
 sub create_pb {
     my $pb = Parse::BBCode->new({
@@ -56,19 +61,33 @@ sub create_bbr {
     return $bbr;
 }
 
-my $pb = create_pb();
-my $bp = create_bp();
-my $hb = create_hb();
-my $bbr = create_bbr();
-my $rendered1 = $pb->render($code);
-#print "$rendered1\n";
-my $tree = $bp->parse($code);
-my $rendered2 = $tree->toHTML();
-#print "$rendered2\n";
-my $rendered3 = $hb->parse($code);
-#print "$rendered3\n";
-my $rendered4 = $bbr->parse($code);
-#print "$rendered4\n";
+my ($pb, $bp, $hb, $bbr, $au);
+if ($loaded{'Parse::BBCode'}) {
+    $pb = create_pb();
+    my $rendered1 = $pb->render($code);
+    #print "$rendered1\n";
+}
+if ($loaded{'BBCode::Parser'}) {
+    $bp = create_bp();
+    my $tree = $bp->parse($code);
+    my $rendered2 = $tree->toHTML();
+    #print "$rendered2\n";
+}
+if ($loaded{'HTML::BBCode'}) {
+    $hb = create_hb();
+    my $rendered3 = $hb->parse($code);
+    #print "$rendered3\n";
+}
+if ($loaded{'HTML::BBReverse'}) {
+    $bbr = create_bbr();
+    my $rendered4 = $bbr->parse($code);
+    #print "$rendered4\n";
+}
+if ($loaded{'AUBBC'}) {
+    $au = create_au();
+    my $rendered5 = $au->do_all_ubbc($code);
+    #print "$rendered4\n";
+}
 
 
 timethese($ARGV[0] || -1, {
@@ -87,5 +106,9 @@ timethese($ARGV[0] || -1, {
     $loaded{'HTML::BBReverse'} ?  (
         'BBR::new' => \&create_bbr,
         'BBR' => sub { my $out = $bbr->parse($code); },
+    ) : (),
+    $loaded{'AUBBC'} ?  (
+        'AUBBC::new' => \&create_bbr,
+        'AUBBC' => sub { my $out = $au->do_all_ubbc($code); },
     ) : (),
 });

@@ -1,5 +1,10 @@
 Revision history for Perl module Parse::BBCode
 
+0.11 Sun Sep 19 13:36:47 CEST 2010
+- Security: change img tag to use "link" escape (filtering javascript:)
+- Added Parse::BBCode::Text
+- Added AUBBC to compare.html and bench.pl
+
 0.10 Mon Jun 14 19:34:12 CEST 2010
 - Bugfix: memleak
   https://rt.cpan.org/Ticket/Display.html?id=54815

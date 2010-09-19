@@ -7,7 +7,7 @@ use URI::Escape;
 use base 'Exporter';
 our @EXPORT_OK = qw/ &defaults &default_escapes &optional /;
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 my $email_valid = 0;
 eval {
     require
@@ -19,7 +19,7 @@ my %default_tags = (
     'b'     => '<b>%s</b>',
     'i'     => '<i>%s</i>',
     'u'     => '<u>%s</u>',
-    'img'   => '<img src="%{html}A" alt="[%{html}s]" title="%{html}s">',
+    'img'   => '<img src="%{link}A" alt="[%{html}s]" title="%{html}s">',
     'url'   => 'url:<a href="%{link}A" rel="nofollow">%s</a>',
     'email' => 'url:<a href="mailto:%{email}A">%s</a>',
     'size'  => '<span style="font-size: %{num}a">%s</span>',

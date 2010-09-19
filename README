@@ -194,7 +194,7 @@ DESCRIPTION
                             my ($parser, $attr, $content, $attribute_fallback) = @_;
                             if ($attr eq 'perl') {
                                 # use some syntax highlighter
-                                $content = highlight_perl($content);
+                                $content = highlight_perl($$content);
                             }
                             else {
                                 $content = Parse::BBCode::escape_html($$content);
