@@ -11,7 +11,7 @@ use Data::Dumper;
 use Carp;
 my $scalar_util = eval "require Scalar::Util; 1";
 
-our $VERSION = '0.11';
+our $VERSION = '0.12';
 
 my %defaults = (
     strict_attributes   => 1,
@@ -203,10 +203,10 @@ sub _compile_def {
 }
 
 sub _render_text {
-    my ($self, $tag, $text) = @_;
+    my ($self, $tag, $text, $info) = @_;
     #warn __PACKAGE__.':'.__LINE__.": text '$text'\n";
     defined (my $code = $self->get_plain) or return $text;
-    return $code->($self, $tag, $text);
+    return $code->($self, $tag, $text, $info);
 }
 
 sub parse {
@@ -481,11 +481,27 @@ sub render {
 }
 
 sub render_tree {
-    my ($self, $tree, $outer) = @_;
+    my ($self, $tree, $outer, $info) = @_;
     my $out = '';
+    $info ||= {
+        stack   => [],
+        tags    => {},
+        classes => {},
+    };
     my $defs = $self->get_tags;
     if (ref $tree) {
         my $name = $tree->get_name;
+        my %tags = %{ $info->{tags} };
+        $tags{$name}++;
+        my @stack = @{ $info->{stack} };
+        push @stack, $name;
+        my %classes = %{ $info->{classes} };
+        $classes{ $tree->get_class }++;
+        my %info = (
+            tags => \%tags,
+            stack => [@stack],
+            classes => \%classes,
+        );
         my $code = $defs->{$name}->{code};
         my $parse = $defs->{$name}->{parse};
         my $attr = $tree->get_attr->[0]->[0];
@@ -499,16 +515,30 @@ sub render_tree {
                 not ref $_
             } @$fallback;
         }
+        if ($tree->get_class eq 'block') {
+            if (@$content == 1 and not ref $content->[0] and defined $content->[0]) {
+                $content->[0] =~ s/^\r?\n//;
+                $content->[0] =~ s/\r?\n\z//;
+            }
+            elsif (@$content > 1) {
+                if (not ref $content->[0] and defined $content->[0]) {
+                    $content->[0] =~ s/^\r?\n//;
+                }
+                if (not ref $content->[-1] and defined $content->[-1]) {
+                    $content->[-1] =~ s/\r?\n\z//;
+                }
+            }
+        }
         if (not exists $defs->{$name}->{parse} or $parse) {
             for my $c (@$content) {
-                $string .= $self->render_tree($c, $tree);
+                $string .= $self->render_tree($c, $tree, \%info);
             }
         }
         else {
             $string = join '', @$content;
         }
         if ($code) {
-            my $o = $code->($self, $attr, \$string, $fallback, $tree);
+            my $o = $code->($self, $attr, \$string, $fallback, $tree, \%info);
             $out .= $o;
         }
         else {
@@ -517,7 +547,7 @@ sub render_tree {
     }
     else {
         #warn __PACKAGE__.':'.__LINE__.": ==== $tree\n";
-        $out .= $self->_render_text($outer, $tree);
+        $out .= $self->_render_text($outer, $tree, $info);
     }
     return $out;
 }
@@ -791,7 +821,10 @@ Here is an example of all the current definition possibilities:
     my $p = Parse::BBCode->new({
             tags => {
                 '' => sub {
-                    my $e = Parse::BBCode::escape_html($_[2]);
+                    my ($parser, $attr, $content, $info) = @_;
+                    # for explanation of $info see below
+                    # at "Define subroutine for tag"
+                    my $e = Parse::BBCode::escape_html($content);
                     $e =~ s/\r?\n|\r/<br>\n/g;
                     $e
                 },
@@ -973,7 +1006,7 @@ Here's an example:
 
     code => {
         code => sub {
-            my ($parser, $attr, $content, $attribute_fallback) = @_;
+            my ($parser, $attr, $content, $attribute_fallback, $tag, $info) = @_;
             if ($attr eq 'perl') {
                 # use some syntax highlighter
                 $content = highlight_perl($$content);
@@ -995,10 +1028,50 @@ If it is set to 1 you will get the rendered content as an argument to
 the subroutine.
 
 The first argument to the subroutine is the Parse::BBCode object itself.
-The second argument is the attribute, the third the tag content as a
-scalar reference and the fourth argument is the attribute fallback which
-is set to the content if the attribute is empty. The fourth argument
-is just for convenience.
+The second argument is the attribute, the third is the already rendered tag
+content as a scalar reference and the fourth argument is the attribute
+fallback which is set to the content if the attribute is empty. The fourth
+argument is just for convenience.
+The fifth argument is the tag object (Parse::BBCode::Tag) itself, so if
+necessary you can get the original tag content by using:
+
+    my $original = $tag->raw_text;
+
+The sixth argument is an info hash. It contains:
+
+    my $info = {
+        tags => $tags,
+        stack => $stack,
+        classes => $classes,
+    };
+
+The variable $tags is a hashref which contains all tag names which are
+outside the current tag, with a count. This is convenient if you have
+to check if the current processed tag is inside a certain tag and you
+want to behave differently, like
+
+    if ($info->{tags}->{special}) {
+        # we are somewhere inside [special]...[/special]
+    }
+
+The variable $stack contains an array ref with all outer tag names.
+So while processing the tag 'i' in
+
+    [quote][quote][b]bold [i]italic[/i][/b][/quote][/quote]
+
+it contains
+    [qw/ quote quote b i /]
+
+The variable $classes contains a hashref with all tag classes and their
+counts outside of the current processed tag.
+For example if you want to process URIs with URI::Find, and you are
+already in a tag with the class 'url' then you don't want to use URI::Find
+here.
+
+    unless ($info->{classes}->{url}) {
+        # not inside of a url class tag ([url], [wikipedia, etc.)
+        # parse text for urls with URI::Find
+    }
 
 =item Single-Tags
 

@@ -1,5 +1,5 @@
 use Data::Dumper;
-use Test::More tests => 33;
+use Test::More tests => 35;
 use Test::NoWarnings;
 use Parse::BBCode;
 use strict;
@@ -50,15 +50,15 @@ my @tests = (
         q#[img://23]# ],
     [ q#[img=foo align=center]test[/img]#,
         q#<img src="foo" alt="[test]" title="test" align="center"># ],
-    [ q#[url=test]foo[/url] bla [url=test2]foo2[/url]#,
-        q#<a href="test" rel="nofollow">foo</a> bla <a href="test2" rel="nofollow">foo2</a>#],
+    [ q#[url=/test]foo[/url] bla [url=/test2]foo2[/url]#,
+        q#<a href="/test" rel="nofollow">foo</a> bla <a href="/test2" rel="nofollow">foo2</a>#],
     [ q#[B]bold? [test#,
         q#[B]bold? [test# ],
     [ q#[B]bold[/B]#,
         q#<b>bold</b># ],
-    [ q#[i=23]italic [b]bold italic <html>[/b][/i]# . $/,
+    [ q#[i=23]italic [b]bold italic <html>[/b][/i]# . "$/$/",
         q#<i>italic <b>bold italic &lt;html&gt;</b></i><br># ],
-    [ q#[U][noparse]<html>[u][c][/noparse][/u]# . $/,
+    [ q#[U][noparse]<html>[u][c][/noparse][/u]# . "$/$/",
         q#<u>&lt;html&gt;[u][c]</u><br># ],
     [ q#[img=foo.jpg]desc <html>[/img]#,
         q#<img src="foo.jpg" alt="[desc &lt;html&gt;]" title="desc &lt;html&gt;" align=""># ],
@@ -76,8 +76,10 @@ my @tests = (
         q#<span style="font-size: 7">big</span># ],
     [ q#[size=huge!]big[/size]#,
         q#<span style="font-size: 0">big</span># ],
-    [ q{[color=#0000ff]blue[/color]},
-        q{<span style="color: #0000ff">blue</span>} ],
+    [ q{[color=#0000FF]blue[/color]},
+        q{<span style="color: #0000FF">blue</span>} ],
+    [ q{[color="red"]blue[/color]},
+        q{<span style="color: red">blue</span>} ],
     [ q{[color="no color!"]blue[/color]},
         q{<span style="color: inherit">blue</span>} ],
     [ q#[list=1][*]first[*]second[*]third[/list]#,
@@ -86,7 +88,7 @@ my @tests = (
         q#<div class="bbcode_quote_header">who:<div class="bbcode_quote_body">cite</div></div># ],
     [ q#[code]use strict;[/code]#,
         q#<div class="bbcode_code_header">:<div class="bbcode_code_body">use strict;</div></div># ],
-    [ q#[perlmonks=123]foo <html>[i]italic[/i][/perlmonks]# . $/,
+    [ q#[perlmonks=123]foo <html>[i]italic[/i][/perlmonks]# . "$/$/",
         q#<a href="http://www.perlmonks.org/?node=123" rel="nofollow">foo &lt;html&gt;<i>italic</i></a><br># ],
     [ q#[noparse]foo[b][/noparse]#,
         q#foo[b]# ],
@@ -100,6 +102,8 @@ my @tests = (
         q#outer</p><p>newline<br> <i>inner<br><br>newline</i>#, undef, $bbc2html_block ],
     [ qq#[url=http://foo/][url=http://bar/]test[/url][/url]#,
         q#<a href="http://foo/" rel="nofollow">[url=http://bar/]test</a>[/url]#, ],
+    [ q#[url=relative]test[/url]#,
+        q#[url=relative]test[/url]#, ],
     [ q#0#,
         q#0#, ],
     [ q# [] #,

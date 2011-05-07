@@ -1,5 +1,14 @@
 Revision history for Perl module Parse::BBCode
 
+0.12 Sat May  7 22:50:28 CEST 2011
+- Security: allow only http://... and /... links (some old and some
+  strange (MSIE) browsers interpret javascr<tab>ipt:)
+- Change: [color]: allow uppercase hex colors, and allow only the 17
+  standard html colors
+- New feature: supply info hash with information on tags outside the
+  currently processed
+- Change: In block tags the first and last linebreak is removed
+
 0.11 Sun Sep 19 13:36:47 CEST 2010
 - Security: change img tag to use "link" escape (filtering javascript:)
 - Added Parse::BBCode::Text

@@ -7,13 +7,33 @@ use URI::Escape;
 use base 'Exporter';
 our @EXPORT_OK = qw/ &defaults &default_escapes &optional /;
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 my $email_valid = 0;
 eval {
     require
         Email::Valid;
 };
 $email_valid = 1 unless $@;
+
+my %colors = (
+    aqua    => 1,                                                                  
+    black   => 1,                                                                  
+    blue    => 1,                                                                  
+    fuchsia => 1,                                                                  
+    gray    => 1,                                                                  
+    grey    => 1,                                                                  
+    green   => 1,                                                                  
+    lime    => 1,                                                                  
+    maroon  => 1,                                                                  
+    navy    => 1,                                                                  
+    olive   => 1,                                                                  
+    purple  => 1,                                                                  
+    red     => 1,                                                                  
+    silver  => 1,                                                                  
+    teal    => 1,                                                                  
+    white   => 1,                                                                  
+    yellow  => 1,                                                                  
+);
 
 my %default_tags = (
     'b'     => '<b>%s</b>',
@@ -63,9 +83,10 @@ my %default_escapes = (
     },
     link => sub {
         my ($p, $tag, $var) = @_;
-        if ($var =~ m{^[a-z]+://}i) {
+        if ($var =~ m{^ (?: [a-z]+:// | / ) \S+ \z}ix) {
+            # allow proto:// and absolute links /
         }
-        elsif ($var =~ m{^\s*[a-z]+\s*:}i) {
+        else {
             # invalid
             return;
         }
@@ -82,7 +103,9 @@ my %default_escapes = (
         $var = Parse::BBCode::escape_html($var);
     },
     htmlcolor => sub {
-        $_[2] =~ m/^(?:[a-z]+|#[0-9a-f]{6})\z/ ? $_[2] : 'inherit'
+        my $color = $_[2];
+        ($color =~ m/^(?:#[0-9a-fA-F]{6})\z/ || exists $colors{lc $color})
+        ? $color : 'inherit'
     },
     num => sub {
         $_[2] =~ m/^[0-9]+\z/ ? $_[2] : 0;

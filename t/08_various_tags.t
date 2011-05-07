@@ -1,4 +1,4 @@
-use Test::More tests => 29;
+use Test::More tests => 30;
 use Parse::BBCode;
 use strict;
 use warnings;
@@ -102,12 +102,12 @@ my @tests = (
         q#<font color="red" size="7">big <b>bold</b> text</font># ],
     [ qq#before\n[list=1]\n[*]first\n[*]second\n[*]third\n[/list]\nafter#,
         qq#before\n<ul><li>first</li><li>second</li><li>third</li></ul>\nafter# ],
-    [ q#[list=1][*]first with [url]foo[/url][*]second[*]third[/list]#,
-        q#<ul><li>first with <a href="foo">foo</a></li><li>second</li><li>third</li></ul># ],
-    [ q#[list=1][*]first[*]second with [url]foo[/url][*]third[/list]#,
-        q#<ul><li>first</li><li>second with <a href="foo">foo</a></li><li>third</li></ul># ],
-    [ q#[list=1][*]first[*]second with [url]foo[*]third[/list]#,
-        q#<ul><li>first</li><li>second with [url]foo</li><li>third</li></ul># ],
+    [ q#[list=1][*]first with [url]/foo[/url][*]second[*]third[/list]#,
+        q#<ul><li>first with <a href="/foo">/foo</a></li><li>second</li><li>third</li></ul># ],
+    [ q#[list=1][*]first[*]second with [url]/foo[/url][*]third[/list]#,
+        q#<ul><li>first</li><li>second with <a href="/foo">/foo</a></li><li>third</li></ul># ],
+    [ q#[list=1][*]first[*]second with [url]/foo[*]third[/list]#,
+        q#<ul><li>first</li><li>second with [url]/foo</li><li>third</li></ul># ],
     [ q#[list=1][*]first[*]second with [url]foo and [b]bold[/b][*]third[/list]#,
         q#<ul><li>first</li><li>second with [url]foo and <b>bold</b></li><li>third</li></ul># ],
     [ q#[list][*]a[list][*]c1[/list][/list]#,
@@ -130,6 +130,8 @@ my @tests = (
         q#text with bold and <hr>line# ],
     [ q#[img]javascript:boo()[/img]#,
         q#[img]javascript:boo()[/img]# ],
+    [ qq#[img]javascr\tipt:boo()[/img]#,
+        qq#[img]javascr\tipt:boo()[/img]# ],
 );
 
 for (@tests) {

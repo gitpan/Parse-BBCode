@@ -30,9 +30,9 @@ my @tests = (
          q#[i]italic<b>bold</b> <quote>this is invalid</quote> [/i]#,
          q#[i]italic[b]bold[/b] [quote]this is invalid[/quote] [/i]#,
          ],
-    [ 1, q#[i]italic[b]bold [url]foo[/url]#,
-         q#<i>italic<b>bold <a href="foo">foo</a></b></i>#,
-         q#[i]italic[b]bold [url]foo[/url][/b][/i]#,
+    [ 1, q#[i]italic[b]bold [url]/foo[/url]#,
+         q#<i>italic<b>bold <a href="/foo">/foo</a></b></i>#,
+         q#[i]italic[b]bold [url]/foo[/url][/b][/i]#,
          ],
 );
 

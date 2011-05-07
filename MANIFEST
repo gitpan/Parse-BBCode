@@ -23,4 +23,5 @@ examples/example.pl
 examples/bench.pl
 examples/compare.html
 Changes
+META.json
 SIGNATURE    Added here by Module::Build

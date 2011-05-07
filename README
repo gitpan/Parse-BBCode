@@ -178,7 +178,10 @@ DESCRIPTION
         my $p = Parse::BBCode->new({
                 tags => {
                     '' => sub {
-                        my $e = Parse::BBCode::escape_html($_[2]);
+                        my ($parser, $attr, $content, $info) = @_;
+                        # for explanation of $info see below
+                        # at "Define subroutine for tag"
+                        my $e = Parse::BBCode::escape_html($content);
                         $e =~ s/\r?\n|\r/<br>\n/g;
                         $e
                     },
@@ -349,7 +352,7 @@ DESCRIPTION
 
             code => {
                 code => sub {
-                    my ($parser, $attr, $content, $attribute_fallback) = @_;
+                    my ($parser, $attr, $content, $attribute_fallback, $tag, $info) = @_;
                     if ($attr eq 'perl') {
                         # use some syntax highlighter
                         $content = highlight_perl($$content);
@@ -370,10 +373,48 @@ DESCRIPTION
         content as an argument to the subroutine.
 
         The first argument to the subroutine is the Parse::BBCode object
-        itself. The second argument is the attribute, the third the tag
-        content as a scalar reference and the fourth argument is the
-        attribute fallback which is set to the content if the attribute is
-        empty. The fourth argument is just for convenience.
+        itself. The second argument is the attribute, the third is the
+        already rendered tag content as a scalar reference and the fourth
+        argument is the attribute fallback which is set to the content if
+        the attribute is empty. The fourth argument is just for convenience.
+        The fifth argument is the tag object (Parse::BBCode::Tag) itself, so
+        if necessary you can get the original tag content by using:
+
+            my $original = $tag->raw_text;
+
+        The sixth argument is an info hash. It contains:
+
+            my $info = {
+                tags => $tags,
+                stack => $stack,
+                classes => $classes,
+            };
+
+        The variable $tags is a hashref which contains all tag names which
+        are outside the current tag, with a count. This is convenient if you
+        have to check if the current processed tag is inside a certain tag
+        and you want to behave differently, like
+
+            if ($info->{tags}->{special}) {
+                # we are somewhere inside [special]...[/special]
+            }
+
+        The variable $stack contains an array ref with all outer tag names.
+        So while processing the tag 'i' in
+
+            [quote][quote][b]bold [i]italic[/i][/b][/quote][/quote]
+
+        it contains [qw/ quote quote b i /]
+
+        The variable $classes contains a hashref with all tag classes and
+        their counts outside of the current processed tag. For example if
+        you want to process URIs with URI::Find, and you are already in a
+        tag with the class 'url' then you don't want to use URI::Find here.
+
+            unless ($info->{classes}->{url}) {
+                # not inside of a url class tag ([url], [wikipedia, etc.)
+                # parse text for urls with URI::Find
+            }
 
     Single-Tags
         Sometimes you might want single tags like for a horizontal line:

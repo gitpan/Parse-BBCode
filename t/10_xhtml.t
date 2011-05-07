@@ -1,5 +1,5 @@
 use Data::Dumper;
-use Test::More tests => 21;
+use Test::More tests => 22;
 use Test::NoWarnings;
 use Parse::BBCode::XHTML;
 use strict;
@@ -17,12 +17,12 @@ my $parser = Parse::BBCode::XHTML->new();
 my @tests = (
     [ q#[B]bold? [test#,
         q#[B]bold? [test# ],
-    [ q#[i=23]italic [b]bold italic <html>[/b][/i]# . $/,
+    [ q#[i=23]italic [b]bold italic <html>[/b][/i]# . "$/$/",
         q#<i>italic <b>bold italic &lt;html&gt;</b></i><br /># ],
-    [ q#[U][noparse]<html>[u][c][/noparse][/u]# . $/,
+    [ q#[U][noparse]<html>[u][c][/noparse][/u]# . "$/$/",
         q#<u>&lt;html&gt;[u][c]</u><br /># ],
-    [ q#[img=foo.jpg]desc <html>[/img]#,
-        q#<img src="foo.jpg" alt="[desc &lt;html&gt;]" title="desc &lt;html&gt;" /># ],
+    [ q#[img=/foo.jpg]desc <html>[/img]#,
+        q#<img src="/foo.jpg" alt="[desc &lt;html&gt;]" title="desc &lt;html&gt;" /># ],
     [ q#[url=javascript:alert(123)]foo <html>[i]italic[/i][/url]#,
         q#[url=javascript:alert(123)]foo &lt;html&gt;<i>italic</i>[/url]# ],
     [ q#[url=http://foo]foo <html>[i]italic[/i][/url]#,
@@ -37,8 +37,10 @@ my @tests = (
         q#<span style="font-size: 7">big</span># ],
     [ q#[size=huge!]big[/size]#,
         q#<span style="font-size: 0">big</span># ],
-    [ q{[color=#0000ff]blue[/color]},
-        q{<span style="color: #0000ff">blue</span>} ],
+    [ q{[color=#0000FF]blue[/color]},
+        q{<span style="color: #0000FF">blue</span>} ],
+    [ q{[color="red"]blue[/color]},
+        q{<span style="color: red">blue</span>} ],
     [ q{[color="no color!"]blue[/color]},
         q{<span style="color: inherit">blue</span>} ],
     [ q#[list=1][*]first[*]second[*]third[/list]#,
