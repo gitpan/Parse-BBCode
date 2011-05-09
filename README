@@ -53,7 +53,7 @@ DESCRIPTION
 
     I wrote this module because HTML::BBCode is not extendable (or I didn't
     see how) and BBCode::Parser seemed good at the first glance but has some
-    issues, for example it says that he following bbode
+    issues, for example it says that the following bbode
 
         [code] foo [b] [/code]
 

@@ -11,7 +11,7 @@ use Data::Dumper;
 use Carp;
 my $scalar_util = eval "require Scalar::Util; 1";
 
-our $VERSION = '0.12';
+our $VERSION = '0.12_001';
 
 my %defaults = (
     strict_attributes   => 1,
@@ -432,6 +432,10 @@ sub parse {
     if ($scalar_util) {
         Scalar::Util::weaken($callback_found_tag);
     }
+    else {
+        # just to make sure no memleak if there's no Scalar::Util
+        undef $callback_found_tag;
+    }
     #warn __PACKAGE__.':'.__LINE__.": !!!!!!!!!!!! left text: '$text'\n";
     #warn __PACKAGE__.':'.__LINE__.$".Data::Dumper->Dump([\@tags], ['tags']);
     my $tree = Parse::BBCode::Tag->new({
@@ -441,8 +445,7 @@ sub parse {
         class => 'block',
         attr => [[]],
     });
-    # just to make sure no memleak if there's no Scalar::Util
-    undef $callback_found_tag;
+    $tree->_init_info({});
     return $tree;
 }
 
@@ -672,7 +675,7 @@ See L<"TODO"> for what might change.
 
 I wrote this module because L<HTML::BBCode> is not extendable (or
 I didn't see how) and L<BBCode::Parser> seemed good at the first
-glance but has some issues, for example it says that he following bbode
+glance but has some issues, for example it says that the following bbode
 
     [code] foo [b] [/code]
 

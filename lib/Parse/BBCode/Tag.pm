@@ -7,7 +7,7 @@ our $VERSION = '0.02';
 use base 'Class::Accessor::Fast';
 __PACKAGE__->follow_best_practice;
 __PACKAGE__->mk_accessors(qw/ name attr attr_raw content
-    finished start end close class single in_url /);
+    finished start end close class single in_url num level /);
 
 sub add_content {
     my ($self, $new) = @_;
@@ -32,6 +32,35 @@ sub raw_text {
     no warnings;
     $text .= $end;
     return $text;
+}
+
+sub _init_info {
+    my ($self, $num, $level) = @_;
+    $level ||= 0;
+    my $name = $self->get_name;
+    $num->{$name}++;
+    $self->set_num($num->{$name});
+    $self->set_level($level);
+    my $content = $self->get_content || [];
+    for my $c (@$content) {
+        next unless ref $c;
+        $c->_init_info($num, $level + 1);
+    }
+}
+
+sub walk {
+    my ($self, $type, $sub) = @_;
+    $type ||= 'bfs';
+    unless ($type eq 'bfs') {
+        croak "walk(): $type '$type' not implemented";
+    }
+    my $result = $sub->($self);
+    return if $result;
+    my $content = $self->get_content || [];
+    for my $c (@$content) {
+        next unless ref $c;
+        $c->walk($type, $sub);
+    }
 }
 
 sub raw_content {
@@ -108,7 +137,7 @@ back to bbcode.
 
 =item raw_content
 
-    my $bbcode = $tag->raw_text;
+    my $bbcode = $tag->raw_content;
 
 Returns the raw content of the tag without the opening and closing tags.
 So if you have tag that was parsed from
@@ -118,6 +147,19 @@ So if you have tag that was parsed from
 it will return
 
     italic and [bold]test[/b]
+
+=item walk
+
+Utility to do a breadth first search ('bfs') over the parsed tree.
+
+    $tag->walk('bfs', sub {
+            # tag is in $_
+            ...
+            return 0;
+        });
+
+When the sub returns 1 it stops walking the tree. Useful for
+finding a certain tag.
 
 =back
 
@@ -173,6 +215,21 @@ tag is C<[*]> for example, inside of C<[list]> tags.
 
 If this tag does not have a closing tag and also no content, like
 [hr], for example, set this to true. Default is 0.
+
+=item num
+
+Absolute number of tag with this name in the tree. Useful if you want
+to number code tags and offer download links.
+
+=item level
+
+Level of tag
+
+For the tag [u] in the following bbcode
+
+    [b]bold [i]italic [u]underlined[/u][/i][/b]
+
+it returns 3.
 
 =back
 

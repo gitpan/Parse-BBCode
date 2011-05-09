@@ -40,7 +40,7 @@
    "provides" : {
       "Parse::BBCode" : {
          "file" : "lib/Parse/BBCode.pm",
-         "version" : "0.12"
+         "version" : "0.12_001"
       },
       "Parse::BBCode::HTML" : {
          "file" : "lib/Parse/BBCode/HTML.pm",
@@ -59,7 +59,7 @@
          "version" : "0.01"
       }
    },
-   "release_status" : "stable",
+   "release_status" : "testing",
    "resources" : {
       "license" : [
          "http://dev.perl.org/licenses/"
@@ -68,5 +68,5 @@
          "url" : "https://parse-bbcode.googlecode.com/svn"
       }
    },
-   "version" : "0.12"
+   "version" : "0.12_001"
 }

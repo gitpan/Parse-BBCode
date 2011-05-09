@@ -64,10 +64,37 @@ my %default_tags = (
         close => 0,
         class => 'block',
     },
-    'quote' => 'block:<div class="bbcode_quote_header">%{html}a:
-<div class="bbcode_quote_body">%s</div></div>',
-    'code'  => 'block:<div class="bbcode_code_header">%{html}a:
-<div class="bbcode_code_body">%{html}s</div></div>',
+    'quote' => {
+        code => sub {
+            my ($parser, $attr, $content) = @_;
+            my $title = 'Quote';
+            if ($attr) {
+                $title = Parse::BBCode::escape_html($attr);
+            }
+            return <<"EOM";
+<div class="bbcode_quote_header">$title:
+<div class="bbcode_quote_body">$$content</div></div>
+EOM
+        },
+        parse => 1,
+        class => 'block',
+    },
+    'code'  => {
+        code => sub {
+            my ($parser, $attr, $content) = @_;
+            my $title = 'Code';
+            if ($attr) {
+                $title = Parse::BBCode::escape_html($attr);
+            }
+            $content = Parse::BBCode::escape_html($$content);
+            return <<"EOM";
+<div class="bbcode_code_header">$title:
+<div class="bbcode_code_body">$content</div></div>
+EOM
+        },
+        parse => 0,
+        class => 'block',
+    },
     'noparse' => '%{html}s',
 );
 my %optional_tags = (
