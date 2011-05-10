@@ -6,12 +6,12 @@ use Parse::BBCode::HTML qw/ &defaults &default_escapes &optional /;
 use base 'Class::Accessor::Fast';
 __PACKAGE__->follow_best_practice;
 __PACKAGE__->mk_accessors(qw/ tags allowed compiled plain strict_attributes
-    close_open_tags error tree escapes direct_attribute /);
+    close_open_tags error tree escapes direct_attribute params /);
 use Data::Dumper;
 use Carp;
 my $scalar_util = eval "require Scalar::Util; 1";
 
-our $VERSION = '0.12_001';
+our $VERSION = '0.12_002';
 
 my %defaults = (
     strict_attributes   => 1,
@@ -184,7 +184,7 @@ sub _compile_def {
                             # if escape returns undef, we return it unparsed
                             return $tag->get_start
                                 . (join '', map {
-                                    $self->render_tree($_);
+                                    $self->_render_tree($_);
                                 } @{ $tag->get_content })
                                 . $tag->get_end;
                         }
@@ -210,7 +210,7 @@ sub _render_text {
 }
 
 sub parse {
-    my ($self, $text) = @_;
+    my ($self, $text, $params) = @_;
     $self->set_error({});
     $self->_compile_tags;
     my $defs = $self->get_tags;
@@ -469,14 +469,14 @@ sub error {
 }
 
 sub render {
-    my ($self, $text) = @_;
+    my ($self, $text, $params) = @_;
     if (@_ < 2) {
         croak ("Missing input - Usage: \$parser->render(\$text)");
     }
     #warn __PACKAGE__.':'.__LINE__.": @_\n";
     #sleep 2;
-    my $tree = $self->parse($text);
-    my $out = $self->render_tree($tree);
+    my $tree = $self->parse($text, $params);
+    my $out = $self->render_tree($tree, $params);
     if ($self->get_error) {
         $self->set_tree($tree);
     }
@@ -484,6 +484,15 @@ sub render {
 }
 
 sub render_tree {
+    my ($self, $tree, $params) = @_;
+    $params ||= {};
+    $self->set_params($params);
+    my $rendered = $self->_render_tree($tree);
+    $self->set_params(undef);
+    return $rendered;
+}
+
+sub _render_tree {
     my ($self, $tree, $outer, $info) = @_;
     my $out = '';
     $info ||= {
@@ -499,7 +508,7 @@ sub render_tree {
         my @stack = @{ $info->{stack} };
         push @stack, $name;
         my %classes = %{ $info->{classes} };
-        $classes{ $tree->get_class }++;
+        $classes{ $tree->get_class || '' }++;
         my %info = (
             tags => \%tags,
             stack => [@stack],
@@ -507,7 +516,8 @@ sub render_tree {
         );
         my $code = $defs->{$name}->{code};
         my $parse = $defs->{$name}->{parse};
-        my $attr = $tree->get_attr->[0]->[0];
+        my $attr = $tree->get_attr || [];
+        $attr = $attr->[0]->[0];
         my $content = $tree->get_content;
         my $fallback = (defined $attr and length $attr) ? $attr : $content;
         my $string = '';
@@ -518,7 +528,7 @@ sub render_tree {
                 not ref $_
             } @$fallback;
         }
-        if ($tree->get_class eq 'block') {
+        if (($tree->get_class || '') eq 'block') {
             if (@$content == 1 and not ref $content->[0] and defined $content->[0]) {
                 $content->[0] =~ s/^\r?\n//;
                 $content->[0] =~ s/\r?\n\z//;
@@ -534,7 +544,7 @@ sub render_tree {
         }
         if (not exists $defs->{$name}->{parse} or $parse) {
             for my $c (@$content) {
-                $string .= $self->render_tree($c, $tree, \%info);
+                $string .= $self->_render_tree($c, $tree, \%info);
             }
         }
         else {
@@ -755,11 +765,28 @@ If set to 0, tag syntax is
 
 =item render
 
-Input: The text to parse
+Input: The text to parse, optional hashref
 
 Returns: the rendered text
 
-    my $parsed = $parser->render($bbcode);
+    my $rendered = $parser->render($bbcode);
+
+You can pass an optional hashref with information you need inside
+of your self-defined rendering subs.
+For example if you want to display code in a codebox with a link to
+download the code you need the id of the article (in a forum) and the number
+of the code tag.
+
+    my $parsed = $parser->render($bbcode, { article_id => 23 });
+    # in the rendering sub:
+        my ($parser, $attr, $content, $attribute_fallback, $tag, $info) = @_;
+        my $article_id = $parser->get_params->{article_id};
+        my $code_id = $tag->get_num;
+        # write downloadlink like
+        # download.pl?article_id=$article_id;code_id=$code_id
+        # in front of the displayed code
+
+See examples/code_download.pl
 
 =item parse
 
@@ -776,6 +803,8 @@ Input: the parse tree
 Returns: The rendered text
 
     my $parsed = $parser->render_tree($tree);
+
+You can pass an optional hashref, for explanation see L<"parse">
 
 =item forbid
 

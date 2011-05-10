@@ -19,9 +19,13 @@ t/08_various_tags.t
 t/09_close_tags.t
 t/10_xhtml.t
 t/11_markdown.t
+t/12_direct_attribute.t
+t/13_plaintext.t
+t/14_info.t
 examples/example.pl
 examples/bench.pl
 examples/compare.html
+examples/code_download.pl
 Changes
 META.json
 SIGNATURE    Added here by Module::Build

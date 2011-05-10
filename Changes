@@ -1,7 +1,11 @@
 Revision history for Perl module Parse::BBCode
 
-0.12_001 Mon May  9 20:08:05 CEST 2011
+0.12_002 Tue May 10 18:17:23 CEST 2011
 
+- New Feature: pass your own information to the rendering subroutines. See
+  parse()
+
+0.12_001 Mon May  9 20:08:05 CEST 2011
 - New Feature: Parse::BBCode::Tag: new accessors 'num' and 'level',
   new method 'walk'
 
