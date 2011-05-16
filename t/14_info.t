@@ -1,5 +1,5 @@
 use Data::Dumper;
-use Test::More tests => 14;
+use Test::More tests => 15;
 use Parse::BBCode;
 use strict;
 use warnings;
@@ -11,7 +11,7 @@ eval {
 my $uri_find = $@ ? 0 : 1;
 
 SKIP: {
-    skip "no URI::Find", 1 unless $uri_find;
+    skip "no URI::Find", 9 unless $uri_find;
 
     my $url_finder_1 = {
         max_length => 10,
@@ -163,3 +163,31 @@ EOM
 $bbcode = "[code=1]test[/code]";
 my $rendered = $p->render($bbcode, { article_id => 23 });
 cmp_ok($rendered, '=~', 'code\?article_id=23;code_id=1', "params");
+
+$p = Parse::BBCode->new({
+        smileys => {
+            icons       => {qw/ :-) smile.png :-( sad.png :-P tongue.gif :-'| cold.png /},
+            base_url    => '/icons/',
+            # sprintf format
+            format      => '<img alt="%2$s" src="%1$s">',
+        },
+        text_processor => sub {
+            my ($text) = @_;
+            $text = uc $text;
+            return Parse::BBCode::escape_html($text);
+        },
+    });
+@tests = (
+    [ qq#[b]bold<hr> :-)[/b] :-(\n:-P :-'|\ntest:-P end#,
+        qq#<b>BOLD&lt;HR&gt; <img alt=":-)" src="/icons/smile.png"></b> <img alt=":-(" src="/icons/sad.png"><br>\n<img alt=":-P" src="/icons/tongue.gif"> <img alt=":-&\#39;|" src="/icons/cold.png"><br>\nTEST:-P END# ],
+);
+for my $test (@tests) {
+    my ($text, $exp) = @$test;
+    my $parsed = $p->render($text);
+    #warn __PACKAGE__.':'.__LINE__.": $parsed\n";
+    $text =~ s/\r/\\r/g;
+    $text =~ s/\n/\\n/g;
+    cmp_ok($parsed, 'eq', $exp, "parse '$text'");
+}
+
+

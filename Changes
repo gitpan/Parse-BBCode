@@ -1,5 +1,8 @@
 Revision history for Perl module Parse::BBCode
 
+0.12_004 Mon May 16 18:02:34 CEST 2011
+New Feature: smiley processor
+
 0.12_003 Mon May 16 13:16:46 CEST 2011
 - New Feature: numbered lists [list=1][*]... [list=a]...
 - New Features: url_finder, text_processor, linebreaks

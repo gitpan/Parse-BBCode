@@ -66,26 +66,6 @@ DESCRIPTION
     with <br> tags. If you need to change this you can set the options
     'url_finder', 'text_processor' and 'linebreaks'.
 
-WHY ANOTHER BBCODE PARSER
-    I wrote this module because HTML::BBCode is not extendable (or I didn't
-    see how) and BBCode::Parser seemed good at the first glance but has some
-    issues, for example it says that the following bbode
-
-        [code] foo [b] [/code]
-
-    is invalid, while I think you should be able to write unbalanced code in
-    code tags. Also BBCode::Parser dies if you have invalid code or
-    not-permitted tags, but in a forum you'd rather show a partly parsed
-    text then an error message.
-
-    What I also wanted is an easy syntax to define own tags, ideally - for
-    simple tags - as plain text, so you can put it in a configuration file.
-    This allows forum admins to add tags easily. Some forums might want a
-    tag for linking to perlmonks.org, other forums need other tags.
-
-    Another goal was to always output a result and don't die. I might add an
-    option which lets the parser die with unbalanced code.
-
   METHODS
     new Constructor. Takes a hash reference with options as an argument.
 
@@ -100,6 +80,9 @@ WHY ANOTHER BBCODE PARSER
                 close_open_tags   => 1, # default 0
                 strict_attributes => 0, # default 0
                 direct_attributes => 1, # default 1
+                url_finder        => 1, # default 0
+                smileys           => 0, # default 0
+                linebreaks        => 1, # default 1
             );
 
         tags
@@ -109,7 +92,39 @@ WHY ANOTHER BBCODE PARSER
             See "ESCAPES"
 
         url_finder
-            See "URL Finder"
+            See "URL FINDER"
+
+        smileys
+            If you want to replace smileys with an icon:
+
+                my $parser = Parse::BBCode->new({
+                        smileys => {
+                            base_url => '/your/url/to/icons/',
+                            icons => { qw/ :-) smile.png :-( sad.png / },
+                            # sprintf format:
+                            # first argument url
+                            # second argument original text smiley (HTML escaped)
+                            format => '<img src="%s" alt="%s">',
+                            # if you need the url and text in a different order
+                            # see perldoc -f sprintf, e.g.
+                            # format => '<img alt="%2$s" src="%1$s">',
+                        },
+                    });
+
+            This subroutine will be applied during the url_finder (or first,
+            if url_finder is 0), and the rest will get processed by the text
+            procesor (default escaping html and replacing linebreaks).
+
+            Smileys are only replaced if surrounded by whitespace or
+            start/end of line/text.
+
+                [b]bold<hr> :-)[/b] :-(
+
+            In this example both smileys will be replaced. The first smiley
+            is at the end of the text because the text inside [b][/b] is
+            processed on its own.
+
+            Open to any suggestions here.
 
         linebreaks
             The default text processor replaces linebreaks with <br>\n. If
@@ -571,6 +586,26 @@ TEXT PROCESSORS
                 },
                 ...
 
+WHY ANOTHER BBCODE PARSER
+    I wrote this module because HTML::BBCode is not extendable (or I didn't
+    see how) and BBCode::Parser seemed good at the first glance but has some
+    issues, for example it says that the following bbode
+
+        [code] foo [b] [/code]
+
+    is invalid, while I think you should be able to write unbalanced code in
+    code tags. Also BBCode::Parser dies if you have invalid code or
+    not-permitted tags, but in a forum you'd rather show a partly parsed
+    text then an error message.
+
+    What I also wanted is an easy syntax to define own tags, ideally - for
+    simple tags - as plain text, so you can put it in a configuration file.
+    This allows forum admins to add tags easily. Some forums might want a
+    tag for linking to perlmonks.org, other forums need other tags.
+
+    Another goal was to always output a result and don't die. I might add an
+    option which lets the parser die with unbalanced code.
+
 TODO
     BBCode to Textile|Markdown
         There is a Parse::BBCode::Markdown module which is only roughly
@@ -603,7 +638,16 @@ REQUIREMENTS
     perl >= 5.6.1, Class::Accessor::Fast, URI::Escape
 
 SEE ALSO
-    BBCode::Parser, HTML::BBCode, HTML::BBReverse
+    BBCode::Parser - a parser which supplies the parsed tree if necessary.
+    Too strict though for using in forums where people write unbalanced
+    bbcode
+
+    HTML::BBCode - simple processor, no parse tree, good enough for
+    processing usual bbcode with the most common tags
+
+    HTML::BBReverse - really simple proccessor, just replaces start and end
+    tags independently by their HTML aequivalents, so not very useful in
+    many cases
 
     See "examples/compare.html" for a feature comparison of the modules and
     feel free to report mistakes.

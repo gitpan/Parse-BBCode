@@ -17,7 +17,7 @@ name: Parse-BBCode
 provides:
   Parse::BBCode:
     file: lib/Parse/BBCode.pm
-    version: 0.12_003
+    version: 0.12_004
   Parse::BBCode::HTML:
     file: lib/Parse/BBCode/HTML.pm
     version: 0.05
@@ -44,4 +44,4 @@ requires:
 resources:
   license: http://dev.perl.org/licenses/
   repository: https://parse-bbcode.googlecode.com/svn
-version: 0.12_003
+version: 0.12_004

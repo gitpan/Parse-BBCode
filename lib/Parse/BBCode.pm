@@ -7,17 +7,20 @@ use base 'Class::Accessor::Fast';
 __PACKAGE__->follow_best_practice;
 __PACKAGE__->mk_accessors(qw/
     tags allowed compiled plain strict_attributes close_open_tags error
-    tree escapes direct_attribute params url_finder text_processor linebreaks /);
+    tree escapes direct_attribute params url_finder text_processor linebreaks
+    smileys /);
 use Data::Dumper;
 use Carp;
 my $scalar_util = eval "require Scalar::Util; 1";
 
-our $VERSION = '0.12_003';
+our $VERSION = '0.12_004';
 
 my %defaults = (
     strict_attributes   => 1,
     direct_attribute    => 1,
     linebreaks          => 1,
+    smileys             => 0,
+    url_finder          => 0,
 );
 sub new {
     my ($class, $args) = @_;
@@ -79,6 +82,7 @@ sub _compile_tags {
         else {
             my $url_finder = $self->get_url_finder;
             my $linebreaks = $self->get_linebreaks;
+            my $smileys = $self->get_smileys;
             if ($url_finder) {
                 my $result = eval { require URI::Find; 1 };
                 unless ($result) {
@@ -86,11 +90,39 @@ sub _compile_tags {
                 }
             }
             my $escape = \&Parse::BBCode::escape_html;
-            my $post_processor = $escape;
+            my $post_processor_1 = $escape;
+            my $post_processor;
             my $text_processor = $self->get_text_processor;
             if ($text_processor) {
-                $post_processor = $text_processor;
+                $post_processor_1 = $text_processor;
             }
+            if ($smileys and ref($smileys->{icons}) eq 'HASH') {
+                $smileys = {
+                    icons => $smileys->{icons},
+                    base_url => $smileys->{base_url} || '/smileys/',
+                    format => $smileys->{format} || '<img src="%s" alt="%s">',
+                };
+                my $re = join '|', map { quotemeta $_ } sort { length $b <=> length $a }
+                    keys %{ $smileys->{icons} };
+                my $code = sub {
+                    my ($text, $post_processor) = @_;
+                    my $out = '';
+                    while ($text =~ s/^ (.*?[\s]|^) ($re) (?=[\s]|$)//xsm) {
+                        my ($pre, $emo) = ($1, $2);
+                        my $url = "$smileys->{base_url}$smileys->{icons}->{$emo}";
+                        my $emo_escaped = Parse::BBCode::escape_html($emo);
+                        my $image_tag = sprintf $smileys->{format}, $url, $emo_escaped;
+                        $out .= $post_processor_1->($pre) . $image_tag;
+                    }
+                    $out .= $post_processor_1->($text);
+                    return $out;
+                };
+                $post_processor = $code;
+            }
+            else {
+                $post_processor = $post_processor_1;
+            }
+
             if ($url_finder) {
                 my $url_find_sub;
                 if (ref($url_finder) eq 'CODE') {
@@ -769,28 +801,6 @@ a default subroutine which escapes HTML and replaces newlines with <br>
 tags. If you need to change this you can set the options 'url_finder',
 'text_processor' and 'linebreaks'.
 
-=head1 WHY ANOTHER BBCODE PARSER
-
-I wrote this module because L<HTML::BBCode> is not extendable (or
-I didn't see how) and L<BBCode::Parser> seemed good at the first
-glance but has some issues, for example it says that the following bbode
-
-    [code] foo [b] [/code]
-
-is invalid, while I think you should be able to write unbalanced code
-in code tags.
-Also BBCode::Parser dies if you have invalid code or not-permitted tags,
-but in a forum you'd rather show a partly parsed text then an error
-message.
-
-What I also wanted is an easy syntax to define own tags, ideally - for
-simple tags - as plain text, so you can put it in a configuration file.
-This allows forum admins to add tags easily. Some forums might want
-a tag for linking to perlmonks.org, other forums need other tags.
-
-Another goal was to always output a result and don't die. I might add an
-option which lets the parser die with unbalanced code.
-
 =head2 METHODS
 
 =over 4
@@ -810,6 +820,9 @@ Constructor. Takes a hash reference with options as an argument.
         close_open_tags   => 1, # default 0
         strict_attributes => 0, # default 0
         direct_attributes => 1, # default 1
+        url_finder        => 1, # default 0
+        smileys           => 0, # default 0
+        linebreaks        => 1, # default 1
     );
 
 =over 4
@@ -824,7 +837,38 @@ See L<"ESCAPES">
 
 =item url_finder
 
-See L<"URL Finder">
+See L<"URL FINDER">
+
+=item smileys
+
+If you want to replace smileys with an icon:
+
+    my $parser = Parse::BBCode->new({
+            smileys => {
+                base_url => '/your/url/to/icons/',
+                icons => { qw/ :-) smile.png :-( sad.png / },
+                # sprintf format:
+                # first argument url
+                # second argument original text smiley (HTML escaped)
+                format => '<img src="%s" alt="%s">',
+                # if you need the url and text in a different order
+                # see perldoc -f sprintf, e.g.
+                # format => '<img alt="%2$s" src="%1$s">',
+            },
+        });
+
+This subroutine will be applied during the url_finder (or first, if
+url_finder is 0), and the rest will get processed by the text
+procesor (default escaping html and replacing linebreaks).
+
+Smileys are only replaced if surrounded by whitespace or start/end of line/text.
+
+    [b]bold<hr> :-)[/b] :-(
+
+In this example both smileys will be replaced. The first smiley is at the end
+of the text because the text inside [b][/b] is processed on its own.
+
+Open to any suggestions here.
 
 =item linebreaks
 
@@ -1323,6 +1367,28 @@ special tag with the empty string:
             },
             ...
 
+=head1 WHY ANOTHER BBCODE PARSER
+
+I wrote this module because L<HTML::BBCode> is not extendable (or
+I didn't see how) and L<BBCode::Parser> seemed good at the first
+glance but has some issues, for example it says that the following bbode
+
+    [code] foo [b] [/code]
+
+is invalid, while I think you should be able to write unbalanced code
+in code tags.
+Also BBCode::Parser dies if you have invalid code or not-permitted tags,
+but in a forum you'd rather show a partly parsed text then an error
+message.
+
+What I also wanted is an easy syntax to define own tags, ideally - for
+simple tags - as plain text, so you can put it in a configuration file.
+This allows forum admins to add tags easily. Some forums might want
+a tag for linking to perlmonks.org, other forums need other tags.
+
+Another goal was to always output a result and don't die. I might add an
+option which lets the parser die with unbalanced code.
+
 
 =head1 TODO
 
@@ -1369,7 +1435,14 @@ perl >= 5.6.1, L<Class::Accessor::Fast>, L<URI::Escape>
 
 =head1 SEE ALSO
 
-L<BBCode::Parser>, L<HTML::BBCode>, L<HTML::BBReverse>
+L<BBCode::Parser> - a parser which supplies the parsed tree if necessary. Too
+strict though for using in forums where people write unbalanced bbcode
+
+L<HTML::BBCode> - simple processor, no parse tree, good enough for processing
+usual bbcode with the most common tags
+
+L<HTML::BBReverse> - really simple proccessor, just replaces start and end tags
+independently by their HTML aequivalents, so not very useful in many cases
 
 See C<examples/compare.html> for a feature comparison of the
 modules and feel free to report mistakes.
