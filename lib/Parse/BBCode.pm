@@ -5,17 +5,19 @@ use Parse::BBCode::Tag;
 use Parse::BBCode::HTML qw/ &defaults &default_escapes &optional /;
 use base 'Class::Accessor::Fast';
 __PACKAGE__->follow_best_practice;
-__PACKAGE__->mk_accessors(qw/ tags allowed compiled plain strict_attributes
-    close_open_tags error tree escapes direct_attribute params /);
+__PACKAGE__->mk_accessors(qw/
+    tags allowed compiled plain strict_attributes close_open_tags error
+    tree escapes direct_attribute params url_finder text_processor linebreaks /);
 use Data::Dumper;
 use Carp;
 my $scalar_util = eval "require Scalar::Util; 1";
 
-our $VERSION = '0.12_002';
+our $VERSION = '0.12_003';
 
 my %defaults = (
     strict_attributes   => 1,
     direct_attribute    => 1,
+    linebreaks          => 1,
 );
 sub new {
     my ($class, $args) = @_;
@@ -38,6 +40,7 @@ sub new {
         %args
     });
     $self->set_allowed([ grep { length } keys %{ $self->get_tags } ]);
+    $self->_compile_tags;
     return $self;
 }
 
@@ -74,11 +77,70 @@ sub _compile_tags {
             }
         }
         else {
-            $plain = sub {
-                my $text = Parse::BBCode::escape_html($_[2]);
-                $text =~ s/\r?\n|\r/<br>\n/g;
-                $text;
-            };
+            my $url_finder = $self->get_url_finder;
+            my $linebreaks = $self->get_linebreaks;
+            if ($url_finder) {
+                my $result = eval { require URI::Find; 1 };
+                unless ($result) {
+                    undef $url_finder;
+                }
+            }
+            my $escape = \&Parse::BBCode::escape_html;
+            my $post_processor = $escape;
+            my $text_processor = $self->get_text_processor;
+            if ($text_processor) {
+                $post_processor = $text_processor;
+            }
+            if ($url_finder) {
+                my $url_find_sub;
+                if (ref($url_finder) eq 'CODE') {
+                    $url_find_sub = $url_finder;
+                }
+                else {
+                    unless (ref($url_finder) eq 'HASH') {
+                        $url_finder = {
+                            max_length => 50,
+                            format => '<a href="%s" rel="nofollow">%s</a>',
+                        };
+                    }
+                    my $max_url = $url_finder->{max_length} || 0;
+                    my $format = $url_finder->{format};
+                    my $finder = URI::Find->new(sub {
+                        my ($url) = @_;
+                        my $title = $url;
+                        if ($max_url and length($title) > $max_url) {
+                            $title = substr($title, 0, $max_url) . "...";
+                        }
+                        my $escaped = Parse::BBCode::escape_html($url);
+                        my $escaped_title = Parse::BBCode::escape_html($title);
+                        my $href = sprintf $format, $escaped, $title;
+                        return $href;
+                    });
+                    $url_find_sub = sub {
+                        my ($ref_content, $post, $info) = @_;
+                        $finder->find($ref_content, sub { $post->($_[0], $info) });
+                    };
+                }
+                $plain = sub {
+                    my ($parser, $attr, $content, $info) = @_;
+                    unless ($info->{classes}->{url}) {
+                        $url_find_sub->(\$content, $post_processor, $info);
+                    }
+                    else {
+                        $content = $post_processor->($content);
+                    }
+                    $content =~ s/\r?\n|\r/<br>\n/g if $linebreaks;
+                    $content;
+                };
+            }
+            else {
+                $plain = sub {
+                    my ($parser, $attr, $content, $info) = @_;
+                    my $text = $post_processor->($content);
+                    $text =~ s/\r?\n|\r/<br>\n/g if $linebreaks;
+                    $text;
+                };
+            }
             $self->set_plain($plain);
         }
 
@@ -95,6 +157,7 @@ sub _compile_tags {
                 $defs->{$key} = $new_def;
             }
             $defs->{$key}->{class} ||= 'inline';
+            $defs->{$key}->{close} = 1 unless defined $defs->{$key}->{close};
         }
         $self->set_compiled(1);
     }
@@ -212,7 +275,6 @@ sub _render_text {
 sub parse {
     my ($self, $text, $params) = @_;
     $self->set_error({});
-    $self->_compile_tags;
     my $defs = $self->get_tags;
     my $tags = $self->get_allowed || [keys %$defs];
     my $re = join '|', map { quotemeta } sort {length $b <=> length $a } @$tags;
@@ -287,7 +349,7 @@ sub parse {
         my ($before, $tag, $after) = split m{ \[ ($re) (?=\b|\]|\=) }x, $text, 2;
         #warn __PACKAGE__.':'.__LINE__.$".Data::Dumper->Dump([\@opened], ['opened']);
         { no warnings;
-        #warn __PACKAGE__.':'.__LINE__.": $before, $tag, $after)\n";
+            #warn __PACKAGE__.':'.__LINE__.": $before, $tag, $after)\n";
         #warn __PACKAGE__.':'.__LINE__.": RE: $current_open_re\n";
         }
         if (length $before) {
@@ -353,18 +415,29 @@ sub parse {
                 my $attr = $1;
                 $attr = '' unless defined $attr;
                 #warn __PACKAGE__.':'.__LINE__.": found attribute for $tag: $attr\n";
+                my $close = $defs->{lc $tag}->{close};
+                my $def = $defs->{lc $tag};
                 my $open = Parse::BBCode::Tag->new({
                         name    => lc $tag,
                         attr    => [],
                         content => [],
                         start   => "[$tag$attr]",
-                        close   => $defs->{lc $tag}->{close},
+                        close   => $close,
                         class   => $defs->{lc $tag}->{class},
                         single  => $defs->{lc $tag}->{single},
                         in_url  => $in_url,
                     });
                 my $success = $self->_validate_attr($open, $attr);
                 my $nested_url = $in_url && $open->get_class eq 'url';
+                if ($success) {
+                    my $last = $opened[-1];
+                    if ($last and not $last->get_close and not $close) {
+                        $self->_finish_tag($last, '');
+                        # tag which should not have closing tag
+                        pop @opened;
+                        $callback_found_tag->($last);
+                    }
+                }
                 if ($success && $open->get_single && !$nested_url) {
                     $self->_finish_tag($open, '');
                     $callback_found_tag->($open);
@@ -414,7 +487,7 @@ sub parse {
         #sleep 1;
         #warn __PACKAGE__.':'.__LINE__.$".Data::Dumper->Dump([\@tags], ['tags']);
     }
-    #warn __PACKAGE__.':'.__LINE__.$".Data::Dumper->Dump([\@opened], ['opened']);
+#    warn __PACKAGE__.':'.__LINE__.$".Data::Dumper->Dump([\@opened], ['opened']);
     if ($self->get_close_open_tags) {
         while (my $opened = pop @opened) {
             $self->_add_error('unclosed', $opened);
@@ -424,7 +497,6 @@ sub parse {
     }
     else {
         while (my $opened = shift @opened) {
-            #warn __PACKAGE__.':'.__LINE__.$".Data::Dumper->Dump([\$opened], ['opened']);
             my @text = $opened->_reduce;
             push @tags, @text;
         }
@@ -627,17 +699,26 @@ __END__
 
 =head1 NAME
 
-Parse::BBCode - Module to turn BBCode into HTML or plain text
+Parse::BBCode - Module to parse BBCode and render it as HTML or text
 
 =head1 SYNOPSIS
 
 To parse a bbcode string, set up a parser with the default HTML defintions
 of L<Parse::BBCode::HTML>:
 
+    # render bbcode to HTML
     use Parse::BBCode;
     my $p = Parse::BBCode->new();
     my $code = 'some [b]b code[/b]';
-    my $parsed = $p->render($code);
+    my $rendered = $p->render($code);
+
+    # parse bbcode, manipulate tree and render
+    use Parse::BBCode;
+    my $p = Parse::BBCode->new();
+    my $code = 'some [b]b code[/b]';
+    my $tree = $p->parse($code);
+    # do something with $tree
+    my $rendered = $p->render_tree($tree);
 
 Or if you want to define your own tags:
 
@@ -682,6 +763,13 @@ change. I'm open for any suggestions on how to improve the
 syntax.
 See L<"TODO"> for what might change.
 
+If you set up the Parse::BBCode object without arguments, the default tags
+are loaded, and any text outside or inside of parseable tags will go through
+a default subroutine which escapes HTML and replaces newlines with <br>
+tags. If you need to change this you can set the options 'url_finder',
+'text_processor' and 'linebreaks'.
+
+=head1 WHY ANOTHER BBCODE PARSER
 
 I wrote this module because L<HTML::BBCode> is not extendable (or
 I didn't see how) and L<BBCode::Parser> seemed good at the first
@@ -721,6 +809,7 @@ Constructor. Takes a hash reference with options as an argument.
         },
         close_open_tags   => 1, # default 0
         strict_attributes => 0, # default 0
+        direct_attributes => 1, # default 1
     );
 
 =over 4
@@ -732,6 +821,24 @@ See L<"TAG DEFINITIONS">
 =item escapes
 
 See L<"ESCAPES">
+
+=item url_finder
+
+See L<"URL Finder">
+
+=item linebreaks
+
+The default text processor replaces linebreaks with <br>\n.
+If you don't want this, set 'linebreaks' to 0.
+
+=item text_processor
+
+If you need to add any customized text processing (like smiley parsing (although
+I will probably add builtin smiley support in one of the next versions)), you can
+pass a subroutine here. Note that this subroutine also needs to do HTML
+escaping itself!
+
+See L<"TEXT PROCESSORS">
 
 =item close_open_tags
 
@@ -786,7 +893,10 @@ of the code tag.
         # download.pl?article_id=$article_id;code_id=$code_id
         # in front of the displayed code
 
-See examples/code_download.pl
+See examples/code_download.pl for a complete example of how to set up
+the rendering and how to extract the code from the tree. If run as a CGI
+skript it will give you a dialogue to save the code into a file, including
+a reasonable default filename.
 
 =item parse
 
@@ -804,7 +914,7 @@ Returns: The rendered text
 
     my $parsed = $parser->render_tree($tree);
 
-You can pass an optional hashref, for explanation see L<"parse">
+You can pass an optional hashref, for explanation see L<"render">
 
 =item forbid
 
@@ -852,14 +962,6 @@ Here is an example of all the current definition possibilities:
 
     my $p = Parse::BBCode->new({
             tags => {
-                '' => sub {
-                    my ($parser, $attr, $content, $info) = @_;
-                    # for explanation of $info see below
-                    # at "Define subroutine for tag"
-                    my $e = Parse::BBCode::escape_html($content);
-                    $e =~ s/\r?\n|\r/<br>\n/g;
-                    $e
-                },
                 i   => '<i>%s</i>',
                 b   => '<b>%{parse}s</b>',
                 size => '<font size="%a">%{parse}s</font>',
@@ -894,21 +996,6 @@ Here is an example of all the current definition possibilities:
 The following list explains the above tag definitions:
 
 =over 4
-
-=item Plain text not in tags
-
-This defines how plain text should be rendered:
-
-    '' => sub {
-        my $e = Parse::BBCode::escape_html($_[2]);
-        $e =~ s/\r?\n|\r/<br>\n/g;
-        $e
-    },
-
-In the most cases, you would want HTML escaping like shown above.
-This is the default, so you can leave it out. Only if you want
-to render BBCode into plain text or something else, you need this
-option.
 
 =item C<%s>
 
@@ -1142,6 +1229,101 @@ it. It returns the empty string if the input is invalid.
 
 See L<Parse::BBCode::HTML/default_escapes> for the detailed list of escapes.
 
+=head1 URL FINDER
+
+Usually one wants to also create hyperlinks from any url found in the
+bbcode, not only in url tags.
+The following code will use L<URI::Find> to search for all types of
+urls (unless inside of a url tag itself), create a link in the given
+format and html-escape the rest.
+If the url is longer than 50 chars, it will cut the link title and append three dots.
+If you set max_length to 0, the title won't be cut.
+
+    my $p = Parse::BBCode->new({
+            url_finder => {
+                max_length  => 50,
+                # sprintf format:
+                format      => '<a href="%s" rel="nofollow">%s</a>',
+            },
+            tags => ...
+        });
+
+Note: If you use the special tag '' in the tag definitions you will
+overwrite the url finder and have to do that yourself.
+
+Alternative:
+
+    my $p = Parse::BBCode->new({
+            url_finder => 1,
+            ...
+
+This will use the default like shown above (max length 50 chars).
+
+Default is 0.
+
+=head1 TEXT PROCESSORS
+
+If you set url_finder and linebreaks to 1, the default text processor
+will work like this:
+
+    my $post_processor = \&sub_for_escaping_HTML;
+    $text = code_to_replace_urls($text, $post_processor);
+    $text =~ s/\r?\n|\r/<br>\n/g;
+    return $text;
+
+It will be applied to text outside of bbcode and inside of parseable
+bbcode tags (and not to code tags or other tags with unparsed content).
+
+If you need an additional post processor this usually cannot be done
+after the HTML escaping and url finding. So if you write a text processor it
+must do the HTML escaping itself.
+For example if you want to replace smileys with image tags you cannot simply do:
+
+    $text =~ s/ :-\) /<img src=...>/g;
+
+because then the image tag would be HTML escaped after that.
+On the other hand it's usually not possible to do something like
+that *after* the HTML escaping since that might introduce text
+sequences that look like a smiley (or whatever you want to replace).
+
+So a simple example for a customized text processor would be:
+
+    ...
+    url_finder     => 1,
+    linebreaks     => 1,
+    text_processor => sub {
+        # for $info hash description see render() method
+        my ($text, $info) = @_;
+        my $out = '';
+        while ($text =~ s/(.*)( |^)(:\))(?= |$)//mgs) {
+            # match a smiley and anything before
+            my ($pre, $sp, $smiley) = ($1, $2, $3);
+            # escape text and add smiley image tag
+            $out .= Parse::BBCode::escape_html($pre) . $sp . '<img src=...>';
+        }
+        # leftover text
+        $out .= Parse::BBCode::escape_html($text);
+        return $out;
+    },
+
+This will result in:
+Replacing urls, applying your text_processor to the rest of the text and
+after that replace linebreaks with <br> tags.
+
+If you want to completely define the plain text processor yourself (ignoring
+the 'linebreak', 'url_finder' and 'text_processor' options) you define the
+special tag with the empty string:
+
+    my $p = Parse::BBCode->new({
+        tags => {
+            '' => sub {
+                my ($parser, $attr, $content, $info) = @_;
+                return frobnicate($content);
+                # remember to escape HTML!
+            },
+            ...
+
+
 =head1 TODO
 
 =over 4
@@ -1166,14 +1348,18 @@ Attributes always have to look like:
     [tag=main_attribute other=foo]...
     [tag="main_attribute" other="foo"]...
 
-=item Redirects for url tags
+I would like to add support for different syntax, because it might
+happen that one has old bbcode lying around (maybe taken over from
+a different forum software) and cannot manually replace all the invalid
+bbcode.
 
-In a forum you might want to prefix links and images with a redirect
-script so that the actual referrer will be hidden from the target
-url. This is extremely helpful if you are using session-ids in your
-urls.
-I plan to add an option for url tags which lets you define the
-redirect-script url.
+=item Short bbcode like syntax for urls
+
+Since I need this myself in my board software and currently do the
+replacing in the text processor I would like to add tags like this:
+
+    [cpan://This::Module|title]
+
 
 =back
 
@@ -1209,7 +1395,7 @@ Sascha Kiefer
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2008 by Tina Mueller
+Copyright (C) 2011 by Tina Mueller
 
 This library is free software; you can redistribute it and/or modify it under
 the same terms as Perl itself, either Perl version 5.6.1 or, at your option,

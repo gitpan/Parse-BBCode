@@ -22,8 +22,9 @@ my $p = Parse::BBCode->new({
                     my $article_id = $parser->get_params->{article_id};
                     my $code_id = $tag->get_num;
                     my $code = Parse::BBCode::escape_html($$content);
+                    my $title = Parse::BBCode::escape_html($attr);
                     return <<"EOM";
-<div class="bbcode_code_header">Code($attr)
+<div class="bbcode_code_header">Code($title)
 <a href="code_download.pl?display=code;article_id=23;code_id=$code_id">Download</a>:
 <div class="bbcode_code_body">
 $code
@@ -62,6 +63,7 @@ elsif ($display eq 'code') {
     print $cgi->header(
         -type => 'text/plain',
         '-X-Content-Type-Options' => 'nosniff',
+        '-Content-Disposition' => "attachment; filename=code_23_$code_id.txt",
     );
     print $code;
 

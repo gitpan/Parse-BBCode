@@ -1,14 +1,23 @@
 NAME
-    Parse::BBCode - Module to turn BBCode into HTML or plain text
+    Parse::BBCode - Module to parse BBCode and render it as HTML or text
 
 SYNOPSIS
     To parse a bbcode string, set up a parser with the default HTML
     defintions of Parse::BBCode::HTML:
 
+        # render bbcode to HTML
         use Parse::BBCode;
         my $p = Parse::BBCode->new();
         my $code = 'some [b]b code[/b]';
-        my $parsed = $p->render($code);
+        my $rendered = $p->render($code);
+
+        # parse bbcode, manipulate tree and render
+        use Parse::BBCode;
+        my $p = Parse::BBCode->new();
+        my $code = 'some [b]b code[/b]';
+        my $tree = $p->parse($code);
+        # do something with $tree
+        my $rendered = $p->render_tree($tree);
 
     Or if you want to define your own tags:
 
@@ -51,6 +60,13 @@ DESCRIPTION
     change. I'm open for any suggestions on how to improve the syntax. See
     "TODO" for what might change.
 
+    If you set up the Parse::BBCode object without arguments, the default
+    tags are loaded, and any text outside or inside of parseable tags will
+    go through a default subroutine which escapes HTML and replaces newlines
+    with <br> tags. If you need to change this you can set the options
+    'url_finder', 'text_processor' and 'linebreaks'.
+
+WHY ANOTHER BBCODE PARSER
     I wrote this module because HTML::BBCode is not extendable (or I didn't
     see how) and BBCode::Parser seemed good at the first glance but has some
     issues, for example it says that the following bbode
@@ -83,6 +99,7 @@ DESCRIPTION
                 },
                 close_open_tags   => 1, # default 0
                 strict_attributes => 0, # default 0
+                direct_attributes => 1, # default 1
             );
 
         tags
@@ -90,6 +107,21 @@ DESCRIPTION
 
         escapes
             See "ESCAPES"
+
+        url_finder
+            See "URL Finder"
+
+        linebreaks
+            The default text processor replaces linebreaks with <br>\n. If
+            you don't want this, set 'linebreaks' to 0.
+
+        text_processor
+            If you need to add any customized text processing (like smiley
+            parsing (although I will probably add builtin smiley support in
+            one of the next versions)), you can pass a subroutine here. Note
+            that this subroutine also needs to do HTML escaping itself!
+
+            See "TEXT PROCESSORS"
 
         close_open_tags
             If set to true (1), it will close open tags at the end or before
@@ -139,7 +171,10 @@ DESCRIPTION
                 # download.pl?article_id=$article_id;code_id=$code_id
                 # in front of the displayed code
 
-        See examples/code_download.pl
+        See examples/code_download.pl for a complete example of how to set
+        up the rendering and how to extract the code from the tree. If run
+        as a CGI skript it will give you a dialogue to save the code into a
+        file, including a reasonable default filename.
 
     parse
         Input: The text to parse.
@@ -155,7 +190,7 @@ DESCRIPTION
 
             my $parsed = $parser->render_tree($tree);
 
-        You can pass an optional hashref, for explanation see "parse"
+        You can pass an optional hashref, for explanation see "render"
 
     forbid
             $parser->forbid(qw/ img url /);
@@ -195,14 +230,6 @@ DESCRIPTION
 
         my $p = Parse::BBCode->new({
                 tags => {
-                    '' => sub {
-                        my ($parser, $attr, $content, $info) = @_;
-                        # for explanation of $info see below
-                        # at "Define subroutine for tag"
-                        my $e = Parse::BBCode::escape_html($content);
-                        $e =~ s/\r?\n|\r/<br>\n/g;
-                        $e
-                    },
                     i   => '<i>%s</i>',
                     b   => '<b>%{parse}s</b>',
                     size => '<font size="%a">%{parse}s</font>',
@@ -235,20 +262,6 @@ DESCRIPTION
         );
 
     The following list explains the above tag definitions:
-
-    Plain text not in tags
-        This defines how plain text should be rendered:
-
-            '' => sub {
-                my $e = Parse::BBCode::escape_html($_[2]);
-                $e =~ s/\r?\n|\r/<br>\n/g;
-                $e
-            },
-
-        In the most cases, you would want HTML escaping like shown above.
-        This is the default, so you can leave it out. Only if you want to
-        render BBCode into plain text or something else, you need this
-        option.
 
     %s
             i => '<i>%s</i>'
@@ -468,6 +481,96 @@ ESCAPES
     See "default_escapes" in Parse::BBCode::HTML for the detailed list of
     escapes.
 
+URL FINDER
+    Usually one wants to also create hyperlinks from any url found in the
+    bbcode, not only in url tags. The following code will use URI::Find to
+    search for all types of urls (unless inside of a url tag itself), create
+    a link in the given format and html-escape the rest. If the url is
+    longer than 50 chars, it will cut the link title and append three dots.
+    If you set max_length to 0, the title won't be cut.
+
+        my $p = Parse::BBCode->new({
+                url_finder => {
+                    max_length  => 50,
+                    # sprintf format:
+                    format      => '<a href="%s" rel="nofollow">%s</a>',
+                },
+                tags => ...
+            });
+
+    Note: If you use the special tag '' in the tag definitions you will
+    overwrite the url finder and have to do that yourself.
+
+    Alternative:
+
+        my $p = Parse::BBCode->new({
+                url_finder => 1,
+                ...
+
+    This will use the default like shown above (max length 50 chars).
+
+    Default is 0.
+
+TEXT PROCESSORS
+    If you set url_finder and linebreaks to 1, the default text processor
+    will work like this:
+
+        my $post_processor = \&sub_for_escaping_HTML;
+        $text = code_to_replace_urls($text, $post_processor);
+        $text =~ s/\r?\n|\r/<br>\n/g;
+        return $text;
+
+    It will be applied to text outside of bbcode and inside of parseable
+    bbcode tags (and not to code tags or other tags with unparsed content).
+
+    If you need an additional post processor this usually cannot be done
+    after the HTML escaping and url finding. So if you write a text
+    processor it must do the HTML escaping itself. For example if you want
+    to replace smileys with image tags you cannot simply do:
+
+        $text =~ s/ :-\) /<img src=...>/g;
+
+    because then the image tag would be HTML escaped after that. On the
+    other hand it's usually not possible to do something like that *after*
+    the HTML escaping since that might introduce text sequences that look
+    like a smiley (or whatever you want to replace).
+
+    So a simple example for a customized text processor would be:
+
+        ...
+        url_finder     => 1,
+        linebreaks     => 1,
+        text_processor => sub {
+            # for $info hash description see render() method
+            my ($text, $info) = @_;
+            my $out = '';
+            while ($text =~ s/(.*)( |^)(:\))(?= |$)//mgs) {
+                # match a smiley and anything before
+                my ($pre, $sp, $smiley) = ($1, $2, $3);
+                # escape text and add smiley image tag
+                $out .= Parse::BBCode::escape_html($pre) . $sp . '<img src=...>';
+            }
+            # leftover text
+            $out .= Parse::BBCode::escape_html($text);
+            return $out;
+        },
+
+    This will result in: Replacing urls, applying your text_processor to the
+    rest of the text and after that replace linebreaks with <br> tags.
+
+    If you want to completely define the plain text processor yourself
+    (ignoring the 'linebreak', 'url_finder' and 'text_processor' options)
+    you define the special tag with the empty string:
+
+        my $p = Parse::BBCode->new({
+            tags => {
+                '' => sub {
+                    my ($parser, $attr, $content, $info) = @_;
+                    return frobnicate($content);
+                    # remember to escape HTML!
+                },
+                ...
+
 TODO
     BBCode to Textile|Markdown
         There is a Parse::BBCode::Markdown module which is only roughly
@@ -485,12 +588,16 @@ TODO
             [tag=main_attribute other=foo]...
             [tag="main_attribute" other="foo"]...
 
-    Redirects for url tags
-        In a forum you might want to prefix links and images with a redirect
-        script so that the actual referrer will be hidden from the target
-        url. This is extremely helpful if you are using session-ids in your
-        urls. I plan to add an option for url tags which lets you define the
-        redirect-script url.
+        I would like to add support for different syntax, because it might
+        happen that one has old bbcode lying around (maybe taken over from a
+        different forum software) and cannot manually replace all the
+        invalid bbcode.
+
+    Short bbcode like syntax for urls
+        Since I need this myself in my board software and currently do the
+        replacing in the text processor I would like to add tags like this:
+
+            [cpan://This::Module|title]
 
 REQUIREMENTS
     perl >= 5.6.1, Class::Accessor::Fast, URI::Escape
@@ -519,7 +626,7 @@ CREDITS
     Sascha Kiefer
 
 COPYRIGHT AND LICENSE
-    Copyright (C) 2008 by Tina Mueller
+    Copyright (C) 2011 by Tina Mueller
 
     This library is free software; you can redistribute it and/or modify it
     under the same terms as Perl itself, either Perl version 5.6.1 or, at

@@ -82,7 +82,7 @@ my @tests = (
         q{<span style="color: red">blue</span>} ],
     [ q{[color="no color!"]blue[/color]},
         q{<span style="color: inherit">blue</span>} ],
-    [ q#[list=1][*]first[*]second[*]third[/list]#,
+    [ q#[list][*]first[*]second[*]third[/list]#,
         q#<ul><li>first</li><li>second</li><li>third</li></ul># ],
     [ q#[quote=who]cite <>[/quote]#,
         q#<div class="bbcode_quote_header">who:<div class="bbcode_quote_body">cite &lt;&gt;</div></div># ],

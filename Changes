@@ -1,9 +1,12 @@
 Revision history for Perl module Parse::BBCode
 
-0.12_002 Tue May 10 18:17:23 CEST 2011
+0.12_003 Mon May 16 13:16:46 CEST 2011
+- New Feature: numbered lists [list=1][*]... [list=a]...
+- New Features: url_finder, text_processor, linebreaks
 
+0.12_002 Tue May 10 18:17:23 CEST 2011
 - New Feature: pass your own information to the rendering subroutines. See
-  parse()
+  render()
 
 0.12_001 Mon May  9 20:08:05 CEST 2011
 - New Feature: Parse::BBCode::Tag: new accessors 'num' and 'level',

@@ -51,15 +51,29 @@ my %default_tags = (
             my ($parser, $attr, $content, $attribute_fallback, $tag) = @_;
             $$content =~ s/^\n+//;
             $$content =~ s/\n+\z//;
-            return "<ul>$$content</ul>";
+            my $type = "ul";
+            my $style = '';
+            if ($attr) {
+                if ($attr eq '1') {
+                    $type = "ol";
+                }
+                elsif ($attr eq 'a') {
+                    $type = "ol";
+                    $style = ' style="list-style-type: lower-alpha"';
+                }
+            }
+            return "<$type$style>$$content</$type>";
         },
     },
     '*' => {
         parse => 1,
         code => sub {
-            my ($parser, $attr, $content, $attribute_fallback, $tag) = @_;
+            my ($parser, $attr, $content, $attribute_fallback, $tag, $info) = @_;
             $$content =~ s/\n+\z//;
-            return "<li>$$content</li>",
+            if ($info->{stack}->[-2] eq 'list') {
+                return "<li>$$content</li>",
+            }
+            return Parse::BBCode::escape_html($tag->raw_text);
         },
         close => 0,
         class => 'block',

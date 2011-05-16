@@ -1,5 +1,5 @@
 use Data::Dumper;
-use Test::More tests => 6;
+use Test::More tests => 14;
 use Parse::BBCode;
 use strict;
 use warnings;
@@ -12,50 +12,72 @@ my $uri_find = $@ ? 0 : 1;
 
 SKIP: {
     skip "no URI::Find", 1 unless $uri_find;
-    my $finder = URI::Find->new(sub {
-        my ($url) = @_;
-        my $title = $url;
-        my $escaped = Parse::BBCode::escape_html($url);
-        my $escaped_title = Parse::BBCode::escape_html($title);
-        my $href = qq{<a href="$escaped" rel="nofollow">$escaped_title</a>};
-        return $href;
-    });
-    my $escape = sub {
-        my ($e) = @_;
-        $e = Parse::BBCode::escape_html($e);
-        return $e;
+
+    my $url_finder_1 = {
+        max_length => 10,
+        format => '<a href="%s" rel="nofollow">%s</a>',
     };
-
-    my $p = Parse::BBCode->new({                                                              
-            tags => {
-                'url'   => 'url:<a href="%{link}A" rel="nofollow">%s</a>',
-                '' => sub {
-                    my ($parser, $attr, $content, $info) = @_;
-                    unless ($info->{classes}->{url}) {
-                        my $count = $finder->find(\$content, $escape);
-                    }
-                    $content =~ s/\r?\n|\r/<br>\n/g;
-                    $content
-                },
-
-            },
+    # really really simple url finder just for PoC
+    my $url_finder_2 = sub {
+        my ($ref_content, $post, $info) = @_;
+        my $out = '';
+        while ($$ref_content =~ s{(.*)?\b(http://[^<>'" ]+)}{}g) {
+            $out .= $post->("$1") . "<$2>";
         }
-    );
-
+        $out .= $post->($$ref_content);
+        $$ref_content = $out;
+    };
+    my $post = sub {
+        my ($text, $info) = @_;
+        my $out = '';
+        while ($text =~ s/(.*)( |^)(:\))(?= |$)//mgs) {
+            my ($pre, $sp, $smiley) = ($1, $2, $3);
+            $out .= Parse::BBCode::escape_html($pre) . $sp . '*smile*';
+        }
+        $out .= Parse::BBCode::escape_html($text);
+        return $out;
+    };
     my @tests = (
         [ q#[url]http://foo/[/url]#,
-            q#<a href="http://foo/" rel="nofollow">http://foo/</a># ],
+            q#<a href="http://foo/" rel="nofollow">http://foo/</a>#, $url_finder_1 ],
+        [ q#[url=http://foo/]<hr>[/url]#,
+            q#<a href="http://foo/" rel="nofollow">&lt;hr&gt;</a>#, $url_finder_1 ],
+        [ q#http://foo/#,
+            qq#<a href="http://foo/" rel="nofollow">http://foo/</a>#, 1],
+        [ q#<hr> http://foo/#,
+            qq#&lt;hr&gt; <http://foo/>#, $url_finder_2],
+        [ q#http://foo/#,
+            qq#<a href="http://foo/" rel="nofollow">http://foo...</a>#, $url_finder_1 ],
+        [ q#[url=http://foo/] :) [/url] :)#,
+            q#<a href="http://foo/" rel="nofollow"> *smile* </a> *smile*#, $url_finder_1, $post ],
+        [ q#[url=http://foo/] :) [/url] :)#,
+            q#<a href="http://foo/" rel="nofollow"> *smile* </a> *smile*#, 0, $post ],
+        [ qq#[url=http://foo/] :) [/url]\n :)#,
+            qq#<a href="http://foo/" rel="nofollow"> *smile* </a>\n *smile*#, 0, $post, 0 ],
+        [ qq#[url=http://foo/] :) [/url]\n :)#,
+            qq#<a href="http://foo/" rel="nofollow"> *smile* </a><br>\n *smile*#, 0, $post, 1 ],
     );
     for my $test (@tests) {
-        my ($text, $exp, $forbid, $parser) = @$test;
-        $parser ||= $p;
-        if ($forbid) {
-            $parser->forbid($forbid);
+        my ($text, $exp, $url_finder, $post, $linebreaks) = @$test;
+        unless (defined $linebreaks) {
+            $linebreaks = 1;
         }
-        my $parsed = $parser->render($text);
+        my $p = Parse::BBCode->new({                                                              
+                url_finder => $url_finder,
+                text_processor => $post,
+                linebreaks => $linebreaks,
+                tags => {
+                    'url'   => 'url:<a href="%{link}A" rel="nofollow">%s</a>',
+                },
+            }
+        );
+
+        my $title = ref $url_finder ? 'http://foo...' : 'http://foo/';
+        my $parsed = $p->render($text);
         #warn __PACKAGE__.':'.__LINE__.": $parsed\n";
-        s/[\r\n]//g for ($exp, $parsed);
-        $text =~ s/[\r\n]//g;
+        #s/[\r\n]//g for ($exp, $parsed);
+        $text =~ s/\r/\\r/g;
+        $text =~ s/\n/\\n/g;
         cmp_ok($parsed, 'eq', $exp, "parse '$text'");
     }
 

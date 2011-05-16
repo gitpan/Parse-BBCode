@@ -1,4 +1,4 @@
-use Test::More tests => 30;
+use Test::More tests => 34;
 use Parse::BBCode;
 use strict;
 use warnings;
@@ -46,26 +46,8 @@ my $p = Parse::BBCode->new({
                     return $text;
                 },
             },
-            'list'  => {
-                parse => 1,
-                class => 'block',
-                code => sub {
-                    my ($parser, $attr, $content, $attribute_fallback, $tag) = @_;
-                    $$content =~ s/^\n+//;
-                    $$content =~ s/\n+\z//;
-                    return "<ul>$$content</ul>";
-                },
-            },
-            '*' => {
-                parse => 1,
-                code => sub {
-                    my ($parser, $attr, $content, $attribute_fallback, $tag) = @_;
-                    $$content =~ s/\n+\z//;
-                    return "<li>$$content</li>",
-                },
-                close => 0,
-                class => 'block',
-            },
+            list => { Parse::BBCode::HTML->defaults }->{list},
+            '*' => { Parse::BBCode::HTML->defaults }->{'*'},
             'img' => '<img src="%{link}A" alt="%{html}s" title="%{html}s">',
             hr => {
                 class => 'block',
@@ -100,18 +82,26 @@ my @tests = (
         q#[raw]some [b]bold[/b] text[/raw]|some [b]bold[/b] text|some <b>bold</b> text# ],
     [ q#[html=style color=red size="7"]big [b]bold[/b] text[/html]#,
         q#<font color="red" size="7">big <b>bold</b> text</font># ],
-    [ qq#before\n[list=1]\n[*]first\n[*]second\n[*]third\n[/list]\nafter#,
+    [ qq#before\n[list]\n[*]first\n[*]second\n[*]third\n[/list]\nafter#,
         qq#before\n<ul><li>first</li><li>second</li><li>third</li></ul>\nafter# ],
-    [ q#[list=1][*]first with [url]/foo[/url][*]second[*]third[/list]#,
+    [ q#[list][*]first with [url]/foo[/url][*]second[*]third[/list]#,
         q#<ul><li>first with <a href="/foo">/foo</a></li><li>second</li><li>third</li></ul># ],
-    [ q#[list=1][*]first[*]second with [url]/foo[/url][*]third[/list]#,
+    [ q#[list][*]first[*]second with [url]/foo[/url][*]third[/list]#,
         q#<ul><li>first</li><li>second with <a href="/foo">/foo</a></li><li>third</li></ul># ],
-    [ q#[list=1][*]first[*]second with [url]/foo[*]third[/list]#,
+    [ q#[list][*]first[*]second with [url]/foo[*]third[/list]#,
         q#<ul><li>first</li><li>second with [url]/foo</li><li>third</li></ul># ],
     [ q#[list=1][*]first[*]second with [url]foo and [b]bold[/b][*]third[/list]#,
-        q#<ul><li>first</li><li>second with [url]foo and <b>bold</b></li><li>third</li></ul># ],
+        q#<ol><li>first</li><li>second with [url]foo and <b>bold</b></li><li>third</li></ol># ],
     [ q#[list][*]a[list][*]c1[/list][/list]#,
         q#<ul><li>a<ul><li>c1</li></ul></li></ul># ],
+    [ q#[list=1][*]a[list][*]c1[/list][/list]#,
+        q#<ol><li>a<ul><li>c1</li></ul></li></ol># ],
+    [ q#[list=a][*]a[list][*]c1[/list][/list]#,
+        q#<ol style="list-style-type: lower-alpha"><li>a<ul><li>c1</li></ul></li></ol># ],
+    [ q#[quote][*]a[*]b [/quote] test#,
+        q#<blockquote>[*]a[*]b </blockquote> test# ],
+    [ q#test [*]a[*]b end#,
+        q#test [*]a[*]b end# ],
     [ q#[img]/path/to/image.png[/img]#,
         q#<img src="/path/to/image.png" alt="/path/to/image.png" title="/path/to/image.png"># ],
     [ q#[img=/path/to/image.png]description[/img]#,

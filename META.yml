@@ -1,5 +1,5 @@
 ---
-abstract: 'Module to turn BBCode into HTML or plain text'
+abstract: 'Module to parse BBCode and render it as HTML or text'
 author:
   - 'Tina Mueller'
 build_requires:
@@ -17,7 +17,7 @@ name: Parse-BBCode
 provides:
   Parse::BBCode:
     file: lib/Parse/BBCode.pm
-    version: 0.12_002
+    version: 0.12_003
   Parse::BBCode::HTML:
     file: lib/Parse/BBCode/HTML.pm
     version: 0.05
@@ -27,6 +27,9 @@ provides:
   Parse::BBCode::Tag:
     file: lib/Parse/BBCode/Tag.pm
     version: 0.02
+  Parse::BBCode::Text:
+    file: lib/Parse/BBCode/Text.pm
+    version: 0.03
   Parse::BBCode::XHTML:
     file: lib/Parse/BBCode/XHTML.pm
     version: 0.01
@@ -41,4 +44,4 @@ requires:
 resources:
   license: http://dev.perl.org/licenses/
   repository: https://parse-bbcode.googlecode.com/svn
-version: 0.12_002
+version: 0.12_003
