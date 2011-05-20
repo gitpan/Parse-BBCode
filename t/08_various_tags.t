@@ -1,4 +1,4 @@
-use Test::More tests => 34;
+use Test::More tests => 36;
 use Parse::BBCode;
 use strict;
 use warnings;
@@ -8,7 +8,9 @@ my $p = Parse::BBCode->new({
             '' => sub { Parse::BBCode::escape_html($_[2]) },
             i   => '<i>%s</i>',
             b   => '<b>%{parse}s</b>',
-            size => '<font size="%a">%{parse}s</font>',
+            size => {
+                output => '<font size="%a">%{parse}s</font>',
+            },
             url => '<a href="%{link}A">%{parse}s</a>',
             wikipedia => '<a href="http://wikipedia.../?search=%{uri}A">%{parse}s</a>',
             noparse => '<pre>%{html}s</pre>',
@@ -33,7 +35,7 @@ my $p = Parse::BBCode->new({
                     my $text = $tag->raw_text . '|' . $tag->raw_content . '|' . $$content;
                 },
             },
-            html => {
+            html2 => {
                 parse => 1,
                 code => sub {
                     my ($parser, $attr, $content, $attribute_fallback, $tag) = @_;
@@ -46,8 +48,8 @@ my $p = Parse::BBCode->new({
                     return $text;
                 },
             },
-            list => { Parse::BBCode::HTML->defaults }->{list},
-            '*' => { Parse::BBCode::HTML->defaults }->{'*'},
+            Parse::BBCode::HTML->optional('html'),
+            Parse::BBCode::HTML->defaults(qw/ list * /),
             'img' => '<img src="%{link}A" alt="%{html}s" title="%{html}s">',
             hr => {
                 class => 'block',
@@ -55,6 +57,14 @@ my $p = Parse::BBCode->new({
                 single => 1,
             },
             quote => 'block:<blockquote>%s</blockquote>',
+            frob => '<frob>%{frobnicate}s</frob>',
+        },
+        escapes => {
+            Parse::BBCode::HTML->default_escapes(qw/ link uri html /),
+            frobnicate => sub {
+                my ($p, $tag, $var) = @_;
+                return uc reverse $var;
+            },
         },
     }
 );
@@ -80,7 +90,9 @@ my @tests = (
         q#<tt>/usr/bin/perl -e 'say "foo";'</tt># ],
     [ q#[raw]some [b]bold[/b] text[/raw]#,
         q#[raw]some [b]bold[/b] text[/raw]|some [b]bold[/b] text|some <b>bold</b> text# ],
-    [ q#[html=style color=red size="7"]big [b]bold[/b] text[/html]#,
+    [ q#[html]<b>bold</b> text[/html]#,
+        q#<b>bold</b> text# ],
+    [ q#[html2=style color=red size="7"]big [b]bold[/b] text[/html2]#,
         q#<font color="red" size="7">big <b>bold</b> text</font># ],
     [ qq#before\n[list]\n[*]first\n[*]second\n[*]third\n[/list]\nafter#,
         qq#before\n<ul><li>first</li><li>second</li><li>third</li></ul>\nafter# ],
@@ -122,6 +134,8 @@ my @tests = (
         q#[img]javascript:boo()[/img]# ],
     [ qq#[img]javascr\tipt:boo()[/img]#,
         qq#[img]javascr\tipt:boo()[/img]# ],
+    [ q#[frob]blubber bla[/frob]#,
+        q#<frob>ALB REBBULB</frob># ],
 );
 
 for (@tests) {

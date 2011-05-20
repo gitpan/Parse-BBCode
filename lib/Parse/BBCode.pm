@@ -13,7 +13,7 @@ use Data::Dumper;
 use Carp;
 my $scalar_util = eval "require Scalar::Util; 1";
 
-our $VERSION = '0.12_004';
+our $VERSION = '0.12_005';
 
 my %defaults = (
     strict_attributes   => 1,
@@ -68,7 +68,8 @@ sub permit {
 
 sub _compile_tags {
     my ($self) = @_;
-    unless ($self->get_compiled) {
+#    unless ($self->get_compiled) {
+    {
         my $defs = $self->get_tags;
 
         # get definition for how text should be rendered which is not in tags
@@ -168,7 +169,7 @@ sub _compile_tags {
             else {
                 $plain = sub {
                     my ($parser, $attr, $content, $info) = @_;
-                    my $text = $post_processor->($content);
+                    my $text = $post_processor->($content, $info);
                     $text =~ s/\r?\n|\r/<br>\n/g if $linebreaks;
                     $text;
                 };
@@ -189,6 +190,7 @@ sub _compile_tags {
                 $defs->{$key} = $new_def;
             }
             $defs->{$key}->{class} ||= 'inline';
+            $defs->{$key}->{classic} = 1 unless defined $defs->{$key}->{classic};
             $defs->{$key}->{close} = 1 unless defined $defs->{$key}->{close};
         }
         $self->set_compiled(1);
@@ -306,11 +308,15 @@ sub _render_text {
 
 sub parse {
     my ($self, $text, $params) = @_;
-    $self->set_error({});
+    $self->set_error(undef);
     my $defs = $self->get_tags;
     my $tags = $self->get_allowed || [keys %$defs];
-    my $re = join '|', map { quotemeta } sort {length $b <=> length $a } @$tags;
-    $re = qr/$re/i;
+    my @classic_tags = grep { $defs->{$_}->{classic} } @$tags;
+    my @short_tags = grep { $defs->{$_}->{short} } @$tags;
+    my $re_classic = join '|', map { quotemeta } sort {length $b <=> length $a } @classic_tags;
+    #$re_classic = qr/$re_classic/i;
+    my $re_short = join '|', map { quotemeta } sort {length $b <=> length $a } @short_tags;
+    #$re_short = qr/$re_short/i;
     #warn __PACKAGE__.':'.__LINE__.$".Data::Dumper->Dump([\$re], ['re']);
     my @tags;
     my $out = '';
@@ -378,12 +384,65 @@ sub parse {
         $in_url = grep { $_->get_class eq 'url' } @opened;
         #warn __PACKAGE__.':'.__LINE__.$".Data::Dumper->Dump([\$in_url], ['in_url']);
         #warn __PACKAGE__.':'.__LINE__.": ============= match $text\n";
-        my ($before, $tag, $after) = split m{ \[ ($re) (?=\b|\]|\=) }x, $text, 2;
-        #warn __PACKAGE__.':'.__LINE__.$".Data::Dumper->Dump([\@opened], ['opened']);
+        my $tag;
+        my ($before, $tag1, $tag2, $after);
+        if ($re_classic and $re_short) {
+            ($before, $tag1, $tag2, $after) = split m{
+                (?:
+                    \[ ($re_short)   (?=://)
+                    |
+                    \[ ($re_classic) (?=\b|\]|\=)
+                )
+            }ix, $text, 2;
+        }
+        elsif (! $re_classic and $re_short) {
+            ($before, $tag1, $after) = split m{
+                    \[ ($re_short)   (?=://)
+            }ix, $text, 2;
+        }
+        elsif ($re_classic and !$re_short) {
+            ($before, $tag2, $after) = split m{
+                    \[ ($re_classic) (?=\b|\]|\=)
+            }ix, $text, 2;
+        }
         { no warnings;
-            #warn __PACKAGE__.':'.__LINE__.": $before, $tag, $after)\n";
+#            warn __PACKAGE__.':'.__LINE__.": $before, $tag1, $tag2, $after)\n";
         #warn __PACKAGE__.':'.__LINE__.": RE: $current_open_re\n";
         }
+        if (defined $tag1) {
+            # short tag
+            $callback_found_text->($before) if length $before;
+            if ($after =~ s{ :// ([^\[]+) \] }{}x) {
+                my $content = $1;
+                my ($attr, $title) = split /\|/, $content, 2;
+                my $tag = Parse::BBCode::Tag->new({
+                        name    => lc $tag1,
+                        attr    => [[$attr]],
+                        content => [(defined $title and length $title) ? $title : ()],
+                        start   => "[$tag1://$content]",
+                        close   => 0,
+                        class   => $defs->{lc $tag1}->{class},
+                        single  => $defs->{lc $tag1}->{single},
+                        in_url  => $in_url,
+                        type    => 'short',
+                    });
+                if ($in_url and $tag->get_class eq 'url') {
+                    $callback_found_text->($tag->get_start);
+                }
+                else {
+                    $callback_found_tag->($tag);
+                }
+
+            }
+            else {
+                $callback_found_text->("[$tag1");
+            }
+#            warn __PACKAGE__.':'.__LINE__.$".Data::Dumper->Dump([\$after], ['after']);
+            $text = $after;
+            next;
+        }
+        $tag = $tag2;
+        #warn __PACKAGE__.':'.__LINE__.$".Data::Dumper->Dump([\@opened], ['opened']);
         if (length $before) {
             # look if it contains a closing tag
             #warn __PACKAGE__.':'.__LINE__.": BEFORE $before\n";
@@ -458,6 +517,7 @@ sub parse {
                         class   => $defs->{lc $tag}->{class},
                         single  => $defs->{lc $tag}->{single},
                         in_url  => $in_url,
+                        type    => 'classic',
                     });
                 my $success = $self->_validate_attr($open, $attr);
                 my $nested_url = $in_url && $open->get_class eq 'url';
@@ -623,8 +683,15 @@ sub _render_tree {
         my $attr = $tree->get_attr || [];
         $attr = $attr->[0]->[0];
         my $content = $tree->get_content;
-        my $fallback = (defined $attr and length $attr) ? $attr : $content;
+        my $fallback;
         my $string = '';
+        if (($tree->get_type || 'classic') eq 'classic') {
+            $fallback = (defined $attr and length $attr) ? $attr : $content;
+        }
+        else {
+            $fallback = $attr;
+            $string = @$content ? '' : $attr;
+        }
         if (ref $fallback) {
             # we have recursive content, we don't want that in
             # an attribute
@@ -1355,7 +1422,7 @@ Replacing urls, applying your text_processor to the rest of the text and
 after that replace linebreaks with <br> tags.
 
 If you want to completely define the plain text processor yourself (ignoring
-the 'linebreak', 'url_finder' and 'text_processor' options) you define the
+the 'linebreak', 'url_finder', 'smileys' and 'text_processor' options) you define the
 special tag with the empty string:
 
     my $p = Parse::BBCode->new({

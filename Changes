@@ -1,5 +1,8 @@
 Revision history for Perl module Parse::BBCode
 
+0.12_005
+New Feature: short tags like [cpan://Module|link title] (experimental)
+
 0.12_004 Mon May 16 18:02:34 CEST 2011
 New Feature: smiley processor
 

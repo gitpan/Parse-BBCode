@@ -170,7 +170,9 @@ sub default_escapes {
 
 sub optional {
     my ($class, @keys) = @_;
-    return @keys ? (grep defined, @optional_tags{@keys}) : %optional_tags;
+    return @keys
+        ? (map { $_ => $optional_tags{$_} } grep  { defined $optional_tags{$_} } @keys)
+        : %optional_tags;
 }
 
 

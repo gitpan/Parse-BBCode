@@ -574,8 +574,8 @@ TEXT PROCESSORS
     rest of the text and after that replace linebreaks with <br> tags.
 
     If you want to completely define the plain text processor yourself
-    (ignoring the 'linebreak', 'url_finder' and 'text_processor' options)
-    you define the special tag with the empty string:
+    (ignoring the 'linebreak', 'url_finder', 'smileys' and 'text_processor'
+    options) you define the special tag with the empty string:
 
         my $p = Parse::BBCode->new({
             tags => {

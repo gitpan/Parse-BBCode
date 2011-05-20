@@ -7,7 +7,7 @@ our $VERSION = '0.02';
 use base 'Class::Accessor::Fast';
 __PACKAGE__->follow_best_practice;
 __PACKAGE__->mk_accessors(qw/ name attr attr_raw content
-    finished start end close class single in_url num level /);
+    finished start end close class single type in_url num level /);
 
 sub add_content {
     my ($self, $new) = @_;

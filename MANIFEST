@@ -23,6 +23,7 @@ t/11_markdown.t
 t/12_direct_attribute.t
 t/13_plaintext.t
 t/14_info.t
+t/15_short.t
 examples/example.pl
 examples/bench.pl
 examples/compare.html

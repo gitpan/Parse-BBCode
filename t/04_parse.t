@@ -1,5 +1,5 @@
 use Data::Dumper;
-use Test::More tests => 35;
+use Test::More tests => 68;
 use Test::NoWarnings;
 use Parse::BBCode;
 use strict;
@@ -23,6 +23,12 @@ my $bbc2html = Parse::BBCode->new({
         },
     }
 );
+my $bbc2html2 = Parse::BBCode->new({                                                              
+        close_open_tags => 1,
+    escapes => {
+        Parse::BBCode::HTML->default_escapes,
+    },
+    });
 my $bbc2html_block = Parse::BBCode->new({                                                              
         tags => {
             Parse::BBCode::HTML->defaults,
@@ -108,9 +114,12 @@ my @tests = (
         q#0#, ],
     [ q# [] #,
         q# [] #, ],
+    [ q#[b]test[/i]#,
+        q#<b>test[/i]</b>#, undef, $bbc2html2, 1],
 );
 for my $test (@tests) {
-    my ($text, $exp, $forbid, $parser) = @$test;
+    my ($text, $exp, $forbid, $parser, $error) = @$test;
+    $error = 0 unless defined $error;
     $parser ||= $bbc2html;
     if ($forbid) {
         $parser->forbid($forbid);
@@ -119,8 +128,10 @@ for my $test (@tests) {
     #warn __PACKAGE__.':'.__LINE__.": $parsed\n";
     s/[\r\n]//g for ($exp, $parsed);
     $text =~ s/[\r\n]//g;
+    cmp_ok($parser->get_error ? 1 : 0, '==', $error, "error $text");
     cmp_ok($parsed, 'eq', $exp, "parse '$text'");
     if ($forbid) {
+        $parser->permit($forbid);
         $parser->permit($forbid);
     }
 }
