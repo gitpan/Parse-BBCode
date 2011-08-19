@@ -1,6 +1,9 @@
 Revision history for Perl module Parse::BBCode
 
-0.12_005
+0.13 Fri Aug 19 14:04:10 CEST 2011
+- Bugfix: short tags broke tag before
+
+0.12_005 Fri May 20 14:05:38 CEST 2011
 New Feature: short tags like [cpan://Module|link title] (experimental)
 
 0.12_004 Mon May 16 18:02:34 CEST 2011

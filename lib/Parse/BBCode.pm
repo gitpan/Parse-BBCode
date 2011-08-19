@@ -9,11 +9,11 @@ __PACKAGE__->mk_accessors(qw/
     tags allowed compiled plain strict_attributes close_open_tags error
     tree escapes direct_attribute params url_finder text_processor linebreaks
     smileys /);
-use Data::Dumper;
+#use Data::Dumper;
 use Carp;
 my $scalar_util = eval "require Scalar::Util; 1";
 
-our $VERSION = '0.12_005';
+our $VERSION = '0.13';
 
 my %defaults = (
     strict_attributes   => 1,
@@ -409,39 +409,6 @@ sub parse {
 #            warn __PACKAGE__.':'.__LINE__.": $before, $tag1, $tag2, $after)\n";
         #warn __PACKAGE__.':'.__LINE__.": RE: $current_open_re\n";
         }
-        if (defined $tag1) {
-            # short tag
-            $callback_found_text->($before) if length $before;
-            if ($after =~ s{ :// ([^\[]+) \] }{}x) {
-                my $content = $1;
-                my ($attr, $title) = split /\|/, $content, 2;
-                my $tag = Parse::BBCode::Tag->new({
-                        name    => lc $tag1,
-                        attr    => [[$attr]],
-                        content => [(defined $title and length $title) ? $title : ()],
-                        start   => "[$tag1://$content]",
-                        close   => 0,
-                        class   => $defs->{lc $tag1}->{class},
-                        single  => $defs->{lc $tag1}->{single},
-                        in_url  => $in_url,
-                        type    => 'short',
-                    });
-                if ($in_url and $tag->get_class eq 'url') {
-                    $callback_found_text->($tag->get_start);
-                }
-                else {
-                    $callback_found_tag->($tag);
-                }
-
-            }
-            else {
-                $callback_found_text->("[$tag1");
-            }
-#            warn __PACKAGE__.':'.__LINE__.$".Data::Dumper->Dump([\$after], ['after']);
-            $text = $after;
-            next;
-        }
-        $tag = $tag2;
         #warn __PACKAGE__.':'.__LINE__.$".Data::Dumper->Dump([\@opened], ['opened']);
         if (length $before) {
             # look if it contains a closing tag
@@ -490,9 +457,43 @@ sub parse {
                     $callback_found_tag->($f);
                 }
             }
-            #warn __PACKAGE__." === before=$before ($tag)\n";
+#            warn __PACKAGE__." === before='$before' ($tag)\n";
             $callback_found_text->($before);
         }
+
+        if (defined $tag1) {
+            # short tag
+#            $callback_found_text->($before) if length $before;
+            if ($after =~ s{ :// ([^\[]+) \] }{}x) {
+                my $content = $1;
+                my ($attr, $title) = split /\|/, $content, 2;
+                my $tag = Parse::BBCode::Tag->new({
+                        name    => lc $tag1,
+                        attr    => [[$attr]],
+                        content => [(defined $title and length $title) ? $title : ()],
+                        start   => "[$tag1://$content]",
+                        close   => 0,
+                        class   => $defs->{lc $tag1}->{class},
+                        single  => $defs->{lc $tag1}->{single},
+                        in_url  => $in_url,
+                        type    => 'short',
+                    });
+                if ($in_url and $tag->get_class eq 'url') {
+                    $callback_found_text->($tag->get_start);
+                }
+                else {
+                    $callback_found_tag->($tag);
+                }
+            }
+            else {
+                $callback_found_text->("[$tag1");
+            }
+            $text = $after;
+            next;
+        }
+        $tag = $tag2;
+
+
         $in_url = grep { $_->get_class eq 'url' } @opened;
 
         if ($after) {

@@ -14,18 +14,18 @@ not run its Makefile.PL or Build.PL.
 -----BEGIN PGP SIGNED MESSAGE-----
 Hash: SHA1
 
-SHA1 4daf7a7197d72be87ea7114bb99e3434fc5eb0cb Build.PL
-SHA1 e94fce023011418596cf65bd2686ffec1ec6fb39 Changes
+SHA1 2e06ddc39b608128c8a843e41d2819886cfb3a5f Build.PL
+SHA1 58ae63cb72cd481660ed2ff49d2b6e35f429c95c Changes
 SHA1 3af078c17646aa6c45b2f7f4fe30bbb65ad676f9 MANIFEST
-SHA1 b07a9f4a2d9b9cc0aa72c5fc42a607b782cb6ba9 META.json
-SHA1 8fe24c665e1fbced445b931c7bd2bfdd888e5993 META.yml
-SHA1 4e2795985ed2f48a2c5d7d40b0341d24e237067d Makefile.PL
-SHA1 86ad604d779ac94948067b2c7ea7ac3248124495 README
+SHA1 26ee01b7008c111eaf47780d5eb694b14e6c77a5 META.json
+SHA1 784b79d2ca9bdedf9591d95e13e26fcc5c8da49e META.yml
+SHA1 692b415d2a7e886f5ad01b48edcddb1cb6074124 Makefile.PL
+SHA1 f1479fcf4afb24a56d0e51840342954f3a5b7e35 README
 SHA1 2516a9e0ecb063ac257549f8283d6e9c0e116162 examples/bench.pl
 SHA1 1caa99efddb775619aac5cbd3b588a8f8704f6b0 examples/code_download.pl
 SHA1 d7d95d268712bf90edb711c84ebcde752ec61ac7 examples/compare.html
 SHA1 32559c2295d554ab69dfaf65286e59a88dd9f38f examples/example.pl
-SHA1 598c41eae5165fb6bc2f5f997c2da58010d78cb2 lib/Parse/BBCode.pm
+SHA1 bad7935f5f83cb6ecdeeef0fa1404d6f7c2dd30c lib/Parse/BBCode.pm
 SHA1 68a07b0981866f0ad02556e3b05e6f02e8158e98 lib/Parse/BBCode/HTML.pm
 SHA1 7eaca44e279244bb3e61125c181271b241709630 lib/Parse/BBCode/Markdown.pm
 SHA1 e3c63ee1e14a281ae7957e0741df05318e61d246 lib/Parse/BBCode/Tag.pm
@@ -38,18 +38,18 @@ SHA1 a8c3850ec54a7ed1bc07e93be94e3cf58ab46033 t/04_parse.t
 SHA1 45d9fa41ea54b5ca7f8c6f2c8b5aa00e4422712f t/05_balanced.t
 SHA1 ff6b617bcdc841c91e463153fc1a98c7e145a8ba t/06_unbalanced.t
 SHA1 b97be6e20e0cf7f4a1cc86ca876d9b6c35273905 t/07_invalid.t
-SHA1 13f3a69c592e8c81d74eb25eb4f6e483cb9b35eb t/08_various_tags.t
+SHA1 fd2da0e5933d5b5f449190cfe41e34427d35eeff t/08_various_tags.t
 SHA1 7430c0cb75ad16a0424fabfe16fd62bc369c5a3c t/09_close_tags.t
 SHA1 9f8d8803ebc29723e465ddf9ac29db72dd126b76 t/10_xhtml.t
 SHA1 a826040385f2388960b75ab8fe92707ab2a84676 t/11_markdown.t
 SHA1 294954bfbc8c5ab0b9a8e544aacd80f4fdbf3fb7 t/12_direct_attribute.t
 SHA1 c251430c147f867da8639aa3b578e2273081f01c t/13_plaintext.t
 SHA1 dd1ead109d4cfffae623fb767e3eb9ac4097dcdc t/14_info.t
-SHA1 b49a6e9d5da17715b28235f95fda6b0c35494cbe t/15_short.t
+SHA1 fb70e9f35ef73cea609c8f750a51ad9b202a29f3 t/15_short.t
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-iEYEARECAAYFAk3WWNYACgkQx8FzFTuJkhf6gwCgxgUT6toGQ7NJfMHfZJPT/VC0
-CuEAoIohbP5SaFHdFB+s5GvoUmtoSYLq
-=vsIA
+iEYEARECAAYFAk5OUcAACgkQx8FzFTuJkhd6XwCgrHApzO5S9qeIgN5W5h3iI+P0
+MT8An3KwTBoPd8amQcadoZXS2wyi/jn+
+=WxwO
 -----END PGP SIGNATURE-----

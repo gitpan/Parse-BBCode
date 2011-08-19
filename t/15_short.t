@@ -1,4 +1,4 @@
-use Test::More tests => 7;
+use Test::More tests => 8;
 use Parse::BBCode;
 use strict;
 use warnings;
@@ -35,6 +35,8 @@ my @tests = (
         q#test Thread: title &lt;hr&gt; (1) test Thread: title &lt;hr&gt; (1) end# ],
     [ qq#test [thread://] end#,
         q#test [thread://] end# ],
+    [ qq#[b]test[/b] [thread://1] [i]end[/i]#,
+        q#<b>test</b> Thread: 1 (1) <i>end</i># ],
 );
 for my $test (@tests) {
     my ($text, $exp, $forbid, $parser) = @$test;

@@ -12,7 +12,6 @@ my $build = Module::Build->new(
         Carp           => 0,
         strict         => 0,
         warnings       => 0,
-        'Data::Dumper' => 0,
         'Class::Accessor::Fast' => 0.25,
         perl => '5.6.1',
     },

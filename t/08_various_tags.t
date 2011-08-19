@@ -1,4 +1,4 @@
-use Test::More tests => 36;
+use Test::More tests => 37;
 use Parse::BBCode;
 use strict;
 use warnings;
@@ -14,6 +14,14 @@ my $p = Parse::BBCode->new({
             url => '<a href="%{link}A">%{parse}s</a>',
             wikipedia => '<a href="http://wikipedia.../?search=%{uri}A">%{parse}s</a>',
             noparse => '<pre>%{html}s</pre>',
+            c => {
+                code => sub {
+                    my ($parser, $attr, $content) = @_;
+                    $content = Parse::BBCode::escape_html($$content);
+                    $content =~ s/ /&nbsp;/g;
+                    return qq{<span class="minicode">$content</span>};
+                },
+            },
             code => {
                 code => sub {
                     my ($parser, $attr, $content, $attribute_fallback) = @_;
@@ -136,6 +144,8 @@ my @tests = (
         qq#[img]javascr\tipt:boo()[/img]# ],
     [ q#[frob]blubber bla[/frob]#,
         q#<frob>ALB REBBULB</frob># ],
+    [ q#start [c] code [/c] end#,
+        q#start <span class="minicode">&nbsp;code&nbsp;</span> end# ],
 );
 
 for (@tests) {

@@ -8,7 +8,6 @@ WriteMakefile
           'PREREQ_PM' => {
                            'Carp' => 0,
                            'Class::Accessor::Fast' => '0.25',
-                           'Data::Dumper' => 0,
                            'Test::More' => 0,
                            'Test::NoWarnings' => 0,
                            'URI::Escape' => 0,
