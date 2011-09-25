@@ -1,7 +1,6 @@
 package Parse::BBCode::Markdown;
 use strict;
 use warnings;
-use Data::Dumper;
 use Carp qw(croak carp);
 use URI::Escape;
 use base qw/ Parse::BBCode /;

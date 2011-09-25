@@ -1,9 +1,9 @@
-use Test::More tests => 8;
+use Test::More tests => 10;
 use Parse::BBCode;
 use strict;
 use warnings;
 
-my $p = Parse::BBCode->new({                                                              
+my $p = Parse::BBCode->new({
         tags => {
             Parse::BBCode::HTML->defaults,
             wikipedia => {
@@ -13,8 +13,15 @@ my $p = Parse::BBCode->new({
                 classic => 0,
             },
             thread => {
-                short => 1,
+                class => 'url',
                 output => 'Thread: %s (%A)',
+                short => 1,
+                classic => 1,
+            },
+            doc => {
+                class => 'url',
+                output => qq{%{uri}A.html:%s},
+                short => 1,
                 classic => 1,
             },
         },
@@ -37,6 +44,10 @@ my @tests = (
         q#test [thread://] end# ],
     [ qq#[b]test[/b] [thread://1] [i]end[/i]#,
         q#<b>test</b> Thread: 1 (1) <i>end</i># ],
+    [ qq#[b]test[/b] [thread=1]test[/thread] [thread://1] [i]end[/i]#,
+        q#<b>test</b> Thread: test (1) Thread: 1 (1) <i>end</i># ],
+    [ qq#[doc=perlipc]ipc[/doc] [doc://perlipc]#,
+        q#perlipc.html:ipc perlipc.html:perlipc# ],
 );
 for my $test (@tests) {
     my ($text, $exp, $forbid, $parser) = @$test;

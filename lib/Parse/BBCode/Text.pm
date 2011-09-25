@@ -1,7 +1,6 @@
 package Parse::BBCode::Text;
 use strict;
 use warnings;
-use Data::Dumper;
 use Carp qw(croak carp);
 
 use base qw/ Parse::BBCode /;

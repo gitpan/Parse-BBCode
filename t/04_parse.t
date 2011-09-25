@@ -1,5 +1,4 @@
-use Data::Dumper;
-use Test::More tests => 68;
+use Test::More tests => 74;
 use Test::NoWarnings;
 use Parse::BBCode;
 use strict;
@@ -49,7 +48,13 @@ my $bbc2html_block = Parse::BBCode->new({
         },
     }
 );
-local $_ = 23;
+my $pns = Parse::BBCode->new({                                                              
+        tags => {
+            b => '<b>%s</b>',
+        },
+        strict_attributes => 0,
+    }
+);
 
 my @tests = (
     [ q#[img://23]#,
@@ -62,6 +67,10 @@ my @tests = (
         q#[B]bold? [test# ],
     [ q#[B]bold[/B]#,
         q#<b>bold</b># ],
+    [ q#[b]bold[/B]#,
+        q#<b>bold</b># ],
+    [ q#[b foo bar]bold[/B]#,
+        q#<b>bold</b>#, undef, $pns],
     [ q#[i=23]italic [b]bold italic <html>[/b][/i]# . "$/$/",
         q#<i>italic <b>bold italic &lt;html&gt;</b></i><br># ],
     [ q#[U][noparse]<html>[u][c][/noparse][/u]# . "$/$/",
@@ -98,10 +107,12 @@ my @tests = (
         q#<a href="http://www.perlmonks.org/?node=123" rel="nofollow">foo &lt;html&gt;<i>italic</i></a><br># ],
     [ q#[noparse]foo[b][/noparse]#,
         q#foo[b]# ],
+    [ q#[noparse]foo[b][/NOPARSE]#,
+        q#foo[b]# ],
     [ q#[code]foo[code]bar<html>[/code][/code]#,
         q#<div class="bbcode_code_header">Code:<div class="bbcode_code_body">foo[code]bar&lt;html&gt;</div></div>[/code]# ],
     [ q#[i]italic [b]bold italic <html>[/i][/b]#,
-        q#<i>italic [b]bold italic &lt;html&gt;</i>[/b]# ],
+        q#<i>italic [b]bold italic &lt;html&gt;</i>[/b]#, undef, undef, 1 ],
     [ q#[i]italic [b]bold italic <html>[/i][/b]#,
         q#[i]italic <b>bold italic &lt;html&gt;[/i]</b>#, 'i' ],
     [ "outer\n\nnewline\n" . qq# [i]inner\n\nnewline[/i]#,

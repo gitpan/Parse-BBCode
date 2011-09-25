@@ -1,7 +1,6 @@
 package Parse::BBCode::HTML;
 use strict;
 use warnings;
-use Data::Dumper;
 use Carp qw(croak carp);
 use URI::Escape;
 use base 'Exporter';

@@ -1,5 +1,12 @@
 Revision history for Perl module Parse::BBCode
 
+0.13_001 Sun Sep 25 17:03:51 CEST 2011
+- Bugfix: another bugfix with short tags
+- Bugfix: closing tags did not happen always (RT 71018)
+- Bugfix: closing unclosed noparse tag (RT 71018)
+- Bugfix: case insensitive search for closing noparse tags (RT 70964)
+- Documentation Fix: default values (RT 70929)
+
 0.13 Fri Aug 19 14:04:10 CEST 2011
 - Bugfix: short tags broke tag before
 

@@ -13,7 +13,7 @@ __PACKAGE__->mk_accessors(qw/
 use Carp;
 my $scalar_util = eval "require Scalar::Util; 1";
 
-our $VERSION = '0.13';
+our $VERSION = '0.13_001';
 
 my %defaults = (
     strict_attributes   => 1,
@@ -371,6 +371,27 @@ sub parse {
                 $o->add_content($tag);
             }
         }
+        elsif (ref $tag) {
+            my $def = $defs->{lc $tag->get_name};
+            my $parse = $def->{parse};
+            if ($parse) {
+                push @tags, $tag;
+            }
+            else {
+                my $content = $tag->get_content;
+                my $string = '';
+                for my $c (@$content) {
+                    if (ref $c) {
+                        $string .= $c->raw_text;
+                    }
+                    else {
+                        $string .= $c;
+                    }
+                }
+                $tag->set_content([$string]);
+                push @tags, $tag;
+            }
+        }
         else {
             push @tags, $tag;
         }
@@ -434,8 +455,21 @@ sub parse {
                         unshift @not_close, $try;
                     }
                     else {
-                        # unbalanced, just add unparsed text
-                        $callback_found_tag->($_) for $try->_reduce;
+                        # unbalanced
+                        $self->_add_error('unclosed', $try);
+                        if ($self->get_close_open_tags) {
+                            # close
+                            $f = $try;
+                            unshift @not_close, $try;
+                            if (@opened) {
+                                $opened[-1]->add_content('');
+                            }
+                            $self->_finish_tag($try, '[/'. $try->get_name() .']');
+                        }
+                        else {
+                            # just add unparsed text
+                            $callback_found_tag->($_) for $try->_reduce;
+                        }
                     }
                 }
                 if (@not_close) {
@@ -462,6 +496,7 @@ sub parse {
         }
 
         if (defined $tag1) {
+            $in_url = grep { $_->get_class eq 'url' } @opened;
             # short tag
 #            $callback_found_text->($before) if length $before;
             if ($after =~ s{ :// ([^\[]+) \] }{}x) {
@@ -548,7 +583,7 @@ sub parse {
                     else {
                         #warn __PACKAGE__.':'.__LINE__.": noparse, find content\n";
                         # just search for closing tag
-                        if ($after =~ s# (.*?) (\[ / $tag \]) ##xs) {
+                        if ($after =~ s# (.*?) (\[ / $tag \]) ##ixs) {
                             my $content = $1;
                             my $end = $2;
                             #warn __PACKAGE__.':'.__LINE__.": CONTENT $content\n";
@@ -886,7 +921,7 @@ Constructor. Takes a hash reference with options as an argument.
             link => ...,
         },
         close_open_tags   => 1, # default 0
-        strict_attributes => 0, # default 0
+        strict_attributes => 0, # default 1
         direct_attributes => 1, # default 1
         url_finder        => 1, # default 0
         smileys           => 0, # default 0
@@ -954,9 +989,13 @@ See L<"TEXT PROCESSORS">
 
 =item close_open_tags
 
+Default: 0
+
 If set to true (1), it will close open tags at the end or before block tags.
 
 =item strict_attributes
+
+Default: 1
 
 If set to true (1), tags with invalid attributes are left unparsed. If set to
 false (0), the attribute for this tags will be empty.
@@ -970,7 +1009,7 @@ you'd like to have this.
 
 =item direct_attributes
 
-Default: true
+Default: 1
 
 Normal tag syntax is:
 
@@ -1435,6 +1474,62 @@ special tag with the empty string:
             },
             ...
 
+=head1 SHORT TAGS
+
+It can be very convenient to have short tags like [foo://id].
+This is not really a part of BBCode, but I consider it as quite similar,
+so I added it to this module.
+For example to link to threads, cpan modules or wikipedia articles:
+
+    [thread://123]
+    [thread://123|custom title]
+    # can be implemented so that it links to thread 123 in the forum
+    # and additionally fetch the thread title.
+
+    [cpan://Module::Foo|some useful module]
+
+    [wikipedia://Harold & Maude]
+
+You can define a short tag by adding the option C<short>. The tag will
+work as a classic tag and short tag. If you only want to support the
+short version, set the option C<classic> to 0.
+
+    my $p = Parse::BBCode->new({
+            tags => {
+                Parse::BBCode::HTML->defaults,
+                wikipedia => {
+                    short   => 1,
+                    output  => '<a href="http://wikipedia/?search=%{uri}A">%{parse}s</a>',
+                    class   => 'url',
+                    classic => 0, # don't support classic [wikipedia]...[/wikipedia]
+                },
+                thread => {
+                    code => sub {
+                        my ($parser, $attr, $content, $attribute_fallback) = @_;
+                        my $id = $attribute_fallback;
+                        if ($id =~ tr/0-9//c) {
+                            return '[thread]' . encode_entities($id) . '[/thread]';
+                        }
+                        my $name;
+                        if ($attr) {
+                            # custom title will be in $attr
+                            # [thread=123]custom title[/thread]
+                            # [thread://123|custom title]
+                            # already escaped
+                            $name = $$content;
+                        }
+                        return qq{<a href="/thread/$id">$name</a>};
+                    },
+                    short   => 1,
+                    classic => 1, # default is 1
+                },
+            },
+        }
+    );
+
+
+
+
 =head1 WHY ANOTHER BBCODE PARSER
 
 I wrote this module because L<HTML::BBCode> is not extendable (or
@@ -1457,6 +1552,36 @@ a tag for linking to perlmonks.org, other forums need other tags.
 Another goal was to always output a result and don't die. I might add an
 option which lets the parser die with unbalanced code.
 
+=head1 WHY BBCODE?
+
+Some forums and blogs prefer a kind of pseudo HTML for user comments.
+The arguments against bbcode is usually: "Why should people learn an
+additional markup language if they can just use HTML?" The problem is
+that many people don't know HTML.
+
+BBCode is often a bit shorter, for example if you have a code tag
+with an attribute that tells the parser what language the content is in.
+
+    [code=perl]...[/code]
+    <code language="perl">...</code>
+
+Also, forum HTML is usually not real HTML. It is usually a subset and
+sometimes with additional tags.
+So in the backend you need to parse it anyway to turn it into real HTML.
+
+BBCode is widely known and used.
+Unfortunately though, there is no specification; some forums only allow
+attributes in double quotes, some forums implement only one attribute that
+can be seperated by spaces, which makes it difficult to parse if you
+want to support more than one attribute.
+
+I tried to support the most common syntax (attributes without quotes, in
+single or double quotes) and tags.
+If you need additional tags it's relatively easy to implement them.
+For example in my forum I implemented a [more] tag that hides long
+text or code in thread view. Without Javascript you will see the expanded
+content when clicking on the single article, or with Javascript the
+content will be added inline via Ajax.
 
 =head1 TODO
 
@@ -1486,14 +1611,6 @@ I would like to add support for different syntax, because it might
 happen that one has old bbcode lying around (maybe taken over from
 a different forum software) and cannot manually replace all the invalid
 bbcode.
-
-=item Short bbcode like syntax for urls
-
-Since I need this myself in my board software and currently do the
-replacing in the text processor I would like to add tags like this:
-
-    [cpan://This::Module|title]
-
 
 =back
 

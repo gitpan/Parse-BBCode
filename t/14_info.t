@@ -1,4 +1,3 @@
-use Data::Dumper;
 use Test::More tests => 15;
 use Parse::BBCode;
 use strict;

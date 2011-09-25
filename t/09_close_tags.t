@@ -1,4 +1,4 @@
-use Test::More tests => 9;
+use Test::More tests => 16;
 use Test::NoWarnings;
 use Parse::BBCode;
 use strict;
@@ -12,6 +12,7 @@ my $p = Parse::BBCode->new({
             size => '<font size="%a">%{parse}s</font>',
             url => '<a href="%{link}A">%{parse}s</a>',
             quote => 'block:<quote>%{parse}s</quote>',
+            noparse => '%{html}s',
         },
         close_open_tags => 1,
     }
@@ -33,7 +34,23 @@ my @tests = (
     [ 1, q#[i]italic[b]bold [url]/foo[/url]#,
          q#<i>italic<b>bold <a href="/foo">/foo</a></b></i>#,
          q#[i]italic[b]bold [url]/foo[/url][/b][/i]#,
-         ],
+    ],
+    [ 1, q#[b][i]italic#,
+         q#<b><i>italic</i></b>#,
+         q#[b][i]italic[/i][/b]#,
+    ],
+    [ 1, q#[b][i]italic[/b]#,
+         q#<b><i>italic</i></b>#,
+         q#[b][i]italic[/i][/b]#,
+    ],
+    [ 0, q#[noparse][b][i]italic[/i][/b]#,
+         q#[noparse]<b><i>italic</i></b>#,
+         q#[noparse][b][i]italic[/i][/b]#,
+    ],
+    [ 1, q#[noparse][b][i]italic[/i][/b]#,
+         q#[b][i]italic[/i][/b]#,
+         q#[noparse][b][i]italic[/i][/b][/noparse]#,
+    ],
 );
 
 for (@tests) {
@@ -41,7 +58,8 @@ for (@tests) {
     $p->set_close_open_tags($close);
     my $parsed = $p->render($in);
     #warn __PACKAGE__.':'.__LINE__.": $parsed\n";
-    cmp_ok($parsed, 'eq', $exp, "invalid $in");
+    my $close_string = $close ? 'yes' : 'no';
+    cmp_ok($parsed, 'eq', $exp, "invalid (close? $close_string) $in");
     my $err = $p->error('block_inline') || $p->error('unclosed');
     if ($err) {
         #warn __PACKAGE__.':'.__LINE__.$".Data::Dumper->Dump([\$err], ['err']);
@@ -49,7 +67,7 @@ for (@tests) {
         #warn __PACKAGE__.':'.__LINE__.$".Data::Dumper->Dump([\$tree], ['tree']);
         my $raw = $tree->raw_text;
         #warn __PACKAGE__.':'.__LINE__.": $raw\n";
-        cmp_ok($raw, 'eq', $exp_raw, "raw text $in");
+        cmp_ok($raw, 'eq', $exp_raw, "raw text (close? $close_string) $in");
     }
 }
 

@@ -1,4 +1,3 @@
-use Data::Dumper;
 use Test::More tests => 22;
 use Test::NoWarnings;
 use Parse::BBCode::XHTML;
