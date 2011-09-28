@@ -39,7 +39,7 @@
    "provides" : {
       "Parse::BBCode" : {
          "file" : "lib/Parse/BBCode.pm",
-         "version" : "0.13_001"
+         "version" : "0.13_002"
       },
       "Parse::BBCode::HTML" : {
          "file" : "lib/Parse/BBCode/HTML.pm",
@@ -71,5 +71,5 @@
          "url" : "https://parse-bbcode.googlecode.com/svn"
       }
    },
-   "version" : "0.13_001"
+   "version" : "0.13_002"
 }

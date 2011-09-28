@@ -2,6 +2,18 @@ NAME
     Parse::BBCode - Module to parse BBCode and render it as HTML or text
 
 SYNOPSIS
+    Parse::BBCode parses common bbcode like
+
+        [b]bold[/b] [size=10]big[/size]
+
+    short tags like
+
+        [foo://test]
+
+    and custom bbcode tags.
+
+    For the documentation of short tags, see "SHORT TAGS".
+
     To parse a bbcode string, set up a parser with the default HTML
     defintions of Parse::BBCode::HTML:
 
@@ -243,6 +255,17 @@ DESCRIPTION
                 my $tree = $parser->get_tree;
                 my $corrected = $tree->raw_text;
             }
+
+    parse_attributes
+        You can inherit from Parse::BBCode and define your own attribute
+        parsing. See "ATTRIBUTE PARSING".
+
+    new_tag
+        Returns a Parse::BBCode::Tag object. It just does: shift;
+        Parse::BBCode::Tag->new(@_);
+
+        If you want your own tag class, inherit from Parse::BBCode and let
+        it return Parse::BBCode::YourTag->new
 
   TAG DEFINITIONS
     Here is an example of all the current definition possibilities:
@@ -529,6 +552,63 @@ URL FINDER
 
     Default is 0.
 
+ATTRIBUTES
+    There are two types of tags. The default (option direct_attributes=1):
+
+        [foo=bar a=b c=d]
+        [foo="text with space" a=b c=d]
+
+    The parsed attribute structure will look like:
+
+        [ ['bar'], ['a' => 'b'], ['c' => 'd'] ]
+
+    Another bbcode variant doesn't use direct attributes:
+
+        [foo a=b c=d]
+
+    The resulting attribute structure will have an empty first element:
+
+        [ [''], ['a' => 'b'], ['c' => 'd'] ]
+
+ATTRIBUTE PARSING
+    If you have bbcode attributes that don't fit into the two standard
+    syntaxes you can inherit from Parse::BBCode and overwrite the
+    parse_attributes method.
+
+    Example:
+
+        [size=10]bold[/size] [foo|bar|boo]footext[/foo] end
+
+    The b tag should be parsed normally, the foo tag needs different
+    parsing.
+
+        sub parse_attributes {
+            my ($self, %args) = @_;
+            # $$text contains '|bar|boo]footext[/foo] end
+            my $text = $args{text};
+            my $tagname = $args{tag}; # 'foo'
+            if ($tagname eq 'foo') {
+                # work on $$text
+                # result should be something like:
+                # $$text should contain 'footext[/foo] end'
+                $valid = 1;
+                @attr = ( [''], [1 => 'bar'], [2 => 'boo'] );
+                $attr_string = '|bar|boo';
+                return ($valid, [@attr], $attr_string, ']');
+            }
+            else {
+                return $self->SUPER::parse_attributes(@_);
+            }
+        }
+
+    If the attributes are not valid, return
+
+        0, [ [''] ], '|bar|boo', ']'
+
+    If you don't find a closing square bracket, return:
+
+        0, [ [''] ], '|bar|boo', ''
+
 TEXT PROCESSORS
     If you set url_finder and linebreaks to 1, the default text processor
     will work like this:
@@ -697,20 +777,7 @@ TODO
 
     API The main syntax is likely to stay, only the API for callbacks might
         change. At the moment it is not possible to add callbacks to the
-        parsing process, only for the rendering phase. It is also not
-        possible to declare your own attribute syntax, for example
-
-            [quote=nickname date]
-
-        Attributes always have to look like:
-
-            [tag=main_attribute other=foo]...
-            [tag="main_attribute" other="foo"]...
-
-        I would like to add support for different syntax, because it might
-        happen that one has old bbcode lying around (maybe taken over from a
-        different forum software) and cannot manually replace all the
-        invalid bbcode.
+        parsing process, only for the rendering phase.
 
 REQUIREMENTS
     perl >= 5.6.1, Class::Accessor::Fast, URI::Escape

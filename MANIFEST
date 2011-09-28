@@ -24,6 +24,7 @@ t/12_direct_attribute.t
 t/13_plaintext.t
 t/14_info.t
 t/15_short.t
+t/16_attributes.t
 examples/example.pl
 examples/bench.pl
 examples/compare.html

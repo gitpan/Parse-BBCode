@@ -1,5 +1,8 @@
 Revision history for Perl module Parse::BBCode
 
+0.13_002 Wed Sep 28 18:08:21 CEST 2011
+- make attribute parsing inheritable
+
 0.13_001 Sun Sep 25 17:03:51 CEST 2011
 - Bugfix: another bugfix with short tags
 - Bugfix: closing tags did not happen always (RT 71018)

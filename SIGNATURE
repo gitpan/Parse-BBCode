@@ -15,17 +15,17 @@ not run its Makefile.PL or Build.PL.
 Hash: SHA1
 
 SHA1 2e06ddc39b608128c8a843e41d2819886cfb3a5f Build.PL
-SHA1 cb2b387c8397688b5c3e825e4547444ae7617e4d Changes
-SHA1 3af078c17646aa6c45b2f7f4fe30bbb65ad676f9 MANIFEST
-SHA1 37e257a453d8621982e4d0e6d7cfdfc0766cb1c1 META.json
-SHA1 c092f2fc69f5fd541528e16690bd06ab37ca4213 META.yml
+SHA1 2275da2b7619e3463c9c2d9888a4a3c7f80fcb41 Changes
+SHA1 7f766ece21cd9439297a4f696c3c2b1171dbe74e MANIFEST
+SHA1 0ca68be9a0e32609cd8a1b2cd2d97445a5fea063 META.json
+SHA1 e81b6468d7507fc8135dc09171adbcfe3e42b02e META.yml
 SHA1 692b415d2a7e886f5ad01b48edcddb1cb6074124 Makefile.PL
-SHA1 1d89d596cea0c4a0a27b761d586eb68ab0ee09c5 README
+SHA1 1b24fea8abc1171ae98320f39b07f7eae091ceb2 README
 SHA1 2516a9e0ecb063ac257549f8283d6e9c0e116162 examples/bench.pl
 SHA1 1caa99efddb775619aac5cbd3b588a8f8704f6b0 examples/code_download.pl
 SHA1 d7d95d268712bf90edb711c84ebcde752ec61ac7 examples/compare.html
 SHA1 32559c2295d554ab69dfaf65286e59a88dd9f38f examples/example.pl
-SHA1 7683c5f429c1c9fedf637534adb4dfbaca28e989 lib/Parse/BBCode.pm
+SHA1 3902e5e92e4393a98f2beae9f6479ef67b7fa6f2 lib/Parse/BBCode.pm
 SHA1 7dfea2c21df6041205204e7b68de0ea6fbfacfb3 lib/Parse/BBCode/HTML.pm
 SHA1 1c6ce799e4d44227d5a283cbdbc234753577474a lib/Parse/BBCode/Markdown.pm
 SHA1 e3c63ee1e14a281ae7957e0741df05318e61d246 lib/Parse/BBCode/Tag.pm
@@ -46,10 +46,11 @@ SHA1 294954bfbc8c5ab0b9a8e544aacd80f4fdbf3fb7 t/12_direct_attribute.t
 SHA1 c251430c147f867da8639aa3b578e2273081f01c t/13_plaintext.t
 SHA1 a1bad2fb80fa12c2f3d15ec7ea20ebfe437a882d t/14_info.t
 SHA1 a90cd9d6f1a84ab5ea0302924f02a4968efeb22c t/15_short.t
+SHA1 0f7486eff5bc60147d291f59f5817404621218ce t/16_attributes.t
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.10 (GNU/Linux)
 
-iEYEARECAAYFAk5/QusACgkQx8FzFTuJkhcVVwCg56gwoOpLYmuNpinqlHZpwspR
-gU4An1lMNkD0+aKeUUmfWMtjJJdK9tJs
-=j4v/
+iEYEARECAAYFAk6DRwAACgkQx8FzFTuJkhetNgCcDADzPreks2lbuxU13d/js9sR
+h6AAmwebkDvnaIVDMvW1+JZbR/N211tG
+=d63h
 -----END PGP SIGNATURE-----

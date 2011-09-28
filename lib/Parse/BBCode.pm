@@ -13,7 +13,7 @@ __PACKAGE__->mk_accessors(qw/
 use Carp;
 my $scalar_util = eval "require Scalar::Util; 1";
 
-our $VERSION = '0.13_001';
+our $VERSION = '0.13_002';
 
 my %defaults = (
     strict_attributes   => 1,
@@ -502,7 +502,7 @@ sub parse {
             if ($after =~ s{ :// ([^\[]+) \] }{}x) {
                 my $content = $1;
                 my ($attr, $title) = split /\|/, $content, 2;
-                my $tag = Parse::BBCode::Tag->new({
+                my $tag = $self->new_tag({
                         name    => lc $tag1,
                         attr    => [[$attr]],
                         content => [(defined $title and length $title) ? $title : ()],
@@ -534,19 +534,19 @@ sub parse {
         if ($after) {
             # found start of a tag
             #warn __PACKAGE__.':'.__LINE__.": find attribute for $tag\n";
-            if (
-                ($self->get_direct_attribute and $after =~ s/^(=[^\]]*)?]//)
-                    or
-                ($after =~ s/^( [^\]]*)?\]//)
-            ) {
-                my $attr = $1;
+            my ($ok, $attributes, $attr_string, $end) = $self->parse_attributes(
+                text => \$after,
+                tag => lc $tag,
+            );
+            if ($ok) {
+                my $attr = $attr_string;
                 $attr = '' unless defined $attr;
                 #warn __PACKAGE__.':'.__LINE__.": found attribute for $tag: $attr\n";
                 my $close = $defs->{lc $tag}->{close};
                 my $def = $defs->{lc $tag};
-                my $open = Parse::BBCode::Tag->new({
+                my $open = $self->new_tag({
                         name    => lc $tag,
-                        attr    => [],
+                        attr    => $attributes,
                         content => [],
                         start   => "[$tag$attr]",
                         close   => $close,
@@ -555,9 +555,9 @@ sub parse {
                         in_url  => $in_url,
                         type    => 'classic',
                     });
-                my $success = $self->_validate_attr($open, $attr);
+                my $success = 1;
                 my $nested_url = $in_url && $open->get_class eq 'url';
-                if ($success) {
+                {
                     my $last = $opened[-1];
                     if ($last and not $last->get_close and not $close) {
                         $self->_finish_tag($last, '');
@@ -566,11 +566,11 @@ sub parse {
                         $callback_found_tag->($last);
                     }
                 }
-                if ($success && $open->get_single && !$nested_url) {
+                if ($open->get_single && !$nested_url) {
                     $self->_finish_tag($open, '');
                     $callback_found_tag->($open);
                 }
-                elsif ($success && !$nested_url) {
+                elsif (!$nested_url) {
                     push @opened, $open;
                     my $def = $defs->{lc $tag};
                     #warn __PACKAGE__.':'.__LINE__.": $tag $def\n";
@@ -604,7 +604,7 @@ sub parse {
             }
             else {
                 # unclosed tag
-                $callback_found_text->("[$tag");
+                $callback_found_text->("[$tag$attr_string$end");
             }
         }
         elsif ($tag) {
@@ -638,7 +638,7 @@ sub parse {
     }
     #warn __PACKAGE__.':'.__LINE__.": !!!!!!!!!!!! left text: '$text'\n";
     #warn __PACKAGE__.':'.__LINE__.$".Data::Dumper->Dump([\@tags], ['tags']);
-    my $tree = Parse::BBCode::Tag->new({
+    my $tree = $self->new_tag({
         name => '',
         content => [@tags],
         start => '',
@@ -647,6 +647,11 @@ sub parse {
     });
     $tree->_init_info({});
     return $tree;
+}
+
+sub new_tag {
+    my $self = shift;
+    Parse::BBCode::Tag->new(@_)
 }
 
 sub _add_error {
@@ -784,36 +789,47 @@ sub escape_html {
     return $str;
 }
 
-sub _validate_attr {
-    my ($self, $tag, $attr) = @_;
-    $tag->set_attr_raw($attr);
-    my @array;
-    unless (length $attr) {
-        $tag->set_attr([]);
-        return 1;
+sub parse_attributes {
+    my ($self, %args) = @_;
+    my $text = $args{text};
+    my $tagname = $args{tag};
+    my $attr_string = '';
+    my $attributes = [];
+    if (
+        ($self->get_direct_attribute and $$text =~ s/^(=[^\]]*)?]//)
+            or
+        ($$text =~ s/^( [^\]]*)?\]//)
+    ) {
+        my $attr = $1;
+        my $end = ']';
+        $attr = '' unless defined $attr;
+        $attr_string = $attr;
+        unless (length $attr) {
+            return (1, [], $attr_string, $end);
+        }
+        if ($self->get_direct_attribute) {
+            $attr =~ s/^=//;
+        }
+        if ($self->get_strict_attributes and not length $attr) {
+            return (0, [], $attr_string, $end);
+        }
+        my @array;
+        if ($attr =~ s/^(?:"([^"]+)"|(.*?)(?:\s+|$))//) {
+            my $val = defined $1 ? $1 : $2;
+            push @array, [$val];
+        }
+        while ($attr =~ s/^([a-zA-Z0-9]+)=(?:"([^"]+)"|(.*?)(?:\s+|$))//) {
+            my $name = $1;
+            my $val = defined $2 ? $2 : $3;
+            push @array, [$name, $val];
+        }
+        if ($self->get_strict_attributes and length $attr) {
+            return (0, [], $attr_string, $end);
+        }
+        $attributes = [@array];
+        return (1, $attributes, $attr_string, $end);
     }
-    if ($self->get_direct_attribute) {
-        $attr =~ s/^=//;
-    }
-    if ($self->get_strict_attributes and not length $attr) {
-        return 0;
-    }
-    if ($attr =~ s/^(?:"([^"]+)"|(.*?)(?:\s+|$))//) {
-        my $val = defined $1 ? $1 : $2;
-        push @array, [$val];
-    }
-    while ($attr =~ s/^([a-zA-Z0-9]+)=(?:"([^"]+)"|(.*?)(?:\s+|$))//) {
-        my $name = $1;
-        my $val = defined $2 ? $2 : $3;
-        push @array, [$name, $val];
-    }
-    #warn __PACKAGE__.':'.__LINE__.$".Data::Dumper->Dump([\@array], ['array']);
-    #warn __PACKAGE__.':'.__LINE__.$".Data::Dumper->Dump([\$attr], ['attr']);
-    if ($self->get_strict_attributes and length $attr) {
-        return 0;
-    }
-    $tag->set_attr(\@array);
-    return 1;
+    return (0, $attributes, $attr_string, '');
 }
 
 # TODO add callbacks
@@ -837,6 +853,18 @@ __END__
 Parse::BBCode - Module to parse BBCode and render it as HTML or text
 
 =head1 SYNOPSIS
+
+Parse::BBCode parses common bbcode like
+
+    [b]bold[/b] [size=10]big[/size]
+
+short tags like
+
+    [foo://test]
+
+and custom bbcode tags.
+
+For the documentation of short tags, see L<"SHORT TAGS">.
 
 To parse a bbcode string, set up a parser with the default HTML defintions
 of L<Parse::BBCode::HTML>:
@@ -1103,6 +1131,21 @@ the tree and return the raw text from it:
         my $tree = $parser->get_tree;
         my $corrected = $tree->raw_text;
     }
+
+=item parse_attributes
+
+You can inherit from Parse::BBCode and define your own attribute
+parsing. See L<"ATTRIBUTE PARSING">.
+
+=item new_tag
+
+Returns a L<Parse::BBCode::Tag> object.
+It just does:
+    shift;
+    Parse::BBCode::Tag->new(@_);
+
+If you want your own tag class, inherit from Parse::BBCode and
+let it return Parse::BBCode::YourTag->new
 
 =back
 
@@ -1412,6 +1455,64 @@ This will use the default like shown above (max length 50 chars).
 
 Default is 0.
 
+=head1 ATTRIBUTES
+
+There are two types of tags. The default (option direct_attributes=1):
+
+    [foo=bar a=b c=d]
+    [foo="text with space" a=b c=d]
+
+The parsed attribute structure will look like:
+
+    [ ['bar'], ['a' => 'b'], ['c' => 'd'] ]
+
+Another bbcode variant doesn't use direct attributes:
+
+    [foo a=b c=d]
+
+The resulting attribute structure will have an empty first element:
+
+    [ [''], ['a' => 'b'], ['c' => 'd'] ]
+
+=head1 ATTRIBUTE PARSING
+
+If you have bbcode attributes that don't fit into the two standard
+syntaxes you can inherit from Parse::BBCode and overwrite the
+parse_attributes method.
+
+Example:
+
+    [size=10]bold[/size] [foo|bar|boo]footext[/foo] end
+
+The b tag should be parsed normally, the foo tag needs different parsing.
+
+    sub parse_attributes {
+        my ($self, %args) = @_;
+        # $$text contains '|bar|boo]footext[/foo] end
+        my $text = $args{text};
+        my $tagname = $args{tag}; # 'foo'
+        if ($tagname eq 'foo') {
+            # work on $$text
+            # result should be something like:
+            # $$text should contain 'footext[/foo] end'
+            $valid = 1;
+            @attr = ( [''], [1 => 'bar'], [2 => 'boo'] );
+            $attr_string = '|bar|boo';
+            return ($valid, [@attr], $attr_string, ']');
+        }
+        else {
+            return $self->SUPER::parse_attributes(@_);
+        }
+    }
+
+If the attributes are not valid, return
+
+    0, [ [''] ], '|bar|boo', ']'
+
+If you don't find a closing square bracket, return:
+
+    0, [ [''] ], '|bar|boo', ''
+
 =head1 TEXT PROCESSORS
 
 If you set url_finder and linebreaks to 1, the default text processor
@@ -1596,21 +1697,7 @@ roughly tested.
 
 The main syntax is likely to stay, only the API for callbacks
 might change. At the moment it is not possible to add callbacks
-to the parsing process, only for the rendering phase. It is
-also not possible to declare your own attribute syntax, for
-example
-
-    [quote=nickname date]
-
-Attributes always have to look like:
-
-    [tag=main_attribute other=foo]...
-    [tag="main_attribute" other="foo"]...
-
-I would like to add support for different syntax, because it might
-happen that one has old bbcode lying around (maybe taken over from
-a different forum software) and cannot manually replace all the invalid
-bbcode.
+to the parsing process, only for the rendering phase.
 
 =back
 
