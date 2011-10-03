@@ -1,9 +1,9 @@
-use Test::More tests => 37;
+use Test::More tests => 39;
 use Parse::BBCode;
 use strict;
 use warnings;
 
-my $p = Parse::BBCode->new({
+my %args = (
         tags => {
             '' => sub { Parse::BBCode::escape_html($_[2]) },
             i   => '<i>%s</i>',
@@ -74,8 +74,15 @@ my $p = Parse::BBCode->new({
                 return uc reverse $var;
             },
         },
-    }
 );
+my $p = Parse::BBCode->new({
+    %args,
+});
+my $lf = Parse::BBCode->new({
+    %args,
+    strip_linebreaks => 0,
+});
+
 
 my @tests = (
     [ q#[size=7]big [b]bold[/b] text[/size]#,
@@ -146,12 +153,18 @@ my @tests = (
         q#<frob>ALB REBBULB</frob># ],
     [ q#start [c] code [/c] end#,
         q#start <span class="minicode">&nbsp;code&nbsp;</span> end# ],
+    [ qq#start\n[quote]\ncode\n[/quote]\nend#,
+        qq#start\n<blockquote>code</blockquote>\nend# ],
+    [ qq#start\n[quote]\ncode\n[/quote]\nend#,
+        qq#start\n<blockquote>\ncode\n</blockquote>\nend#, $lf ],
 );
 
 for (@tests) {
-    my ($in, $exp) = @$_;
-    my $parsed = $p->render($in);
+    my ($in, $exp, $parser) = @$_;
+    $parser ||= $p;
+    my $parsed = $parser->render($in);
     #warn __PACKAGE__.':'.__LINE__.": $parsed\n";
+    $in =~ s/\n/\\n/g;
     cmp_ok($parsed, 'eq', $exp, "$in");
 }
 {

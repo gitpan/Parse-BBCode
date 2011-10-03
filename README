@@ -181,6 +181,15 @@ DESCRIPTION
 
               [tag attr2=val2 ...]
 
+        attribute_parser
+            You can pass a subref that overrides the default attribute
+            parsing. See "ATTRIBUTE PARSING"
+
+        strip_linebreaks
+            Default: 1
+
+            Strips linebreaks at start/end of block tags
+
     render
         Input: The text to parse, optional hashref
 
@@ -573,13 +582,14 @@ ATTRIBUTES
 ATTRIBUTE PARSING
     If you have bbcode attributes that don't fit into the two standard
     syntaxes you can inherit from Parse::BBCode and overwrite the
-    parse_attributes method.
+    parse_attributes method, or you can pass an option attribute_parser
+    contaning a subref.
 
     Example:
 
-        [size=10]bold[/size] [foo|bar|boo]footext[/foo] end
+        [size=10]big[/size] [foo|bar|boo]footext[/foo] end
 
-    The b tag should be parsed normally, the foo tag needs different
+    The size tag should be parsed normally, the foo tag needs different
     parsing.
 
         sub parse_attributes {
@@ -597,9 +607,13 @@ ATTRIBUTE PARSING
                 return ($valid, [@attr], $attr_string, ']');
             }
             else {
-                return $self->SUPER::parse_attributes(@_);
+                return shift->SUPER::parse_attributes(@_);
             }
         }
+        my $parser = Parse::BBCode->new({
+            ...
+            attribute_parser => \&parse_attributes,
+        });
 
     If the attributes are not valid, return
 

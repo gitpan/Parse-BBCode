@@ -7,7 +7,7 @@ our $VERSION = '0.02';
 use base 'Class::Accessor::Fast';
 __PACKAGE__->follow_best_practice;
 __PACKAGE__->mk_accessors(qw/ name attr attr_raw content
-    finished start end close class single type in_url num level /);
+    finished start end close class single type in_url num level auto_closed /);
 
 sub add_content {
     my ($self, $new) = @_;
@@ -25,10 +25,18 @@ sub add_content {
 }
 
 sub raw_text {
-    my ($self) = @_;
+    my ($self, %args) = @_;
+    %args = (
+        auto_close => 1,
+        %args,
+    );
+    my $auto_close = $args{auto_close};
     my ($start, $end) = ($self->get_start, $self->get_end);
+    if (not $auto_close and $self->get_auto_closed) {
+        $end = '';
+    }
     my $text = $start;
-    $text .= $self->raw_content;
+    $text .= $self->raw_content(%args);
     no warnings;
     $text .= $end;
     return $text;
@@ -64,13 +72,13 @@ sub walk {
 }
 
 sub raw_content {
-    my ($self) = @_;
+    my ($self, %args) = @_;
     my $content = $self->get_content;
     my $text = '';
     #warn __PACKAGE__.':'.__LINE__.$".Data::Dumper->Dump([\$self], ['self']);
     for my $c (@$content) {
         if (ref $c eq ref $self) {
-            $text .= $c->raw_text;
+            $text .= $c->raw_text(%args);
         }
         else {
             $text .= $c;

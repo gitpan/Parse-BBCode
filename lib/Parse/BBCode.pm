@@ -8,12 +8,12 @@ __PACKAGE__->follow_best_practice;
 __PACKAGE__->mk_accessors(qw/
     tags allowed compiled plain strict_attributes close_open_tags error
     tree escapes direct_attribute params url_finder text_processor linebreaks
-    smileys /);
+    smileys attribute_parser strip_linebreaks /);
 #use Data::Dumper;
 use Carp;
 my $scalar_util = eval "require Scalar::Util; 1";
 
-our $VERSION = '0.13_002';
+our $VERSION = '0.13_003';
 
 my %defaults = (
     strict_attributes   => 1,
@@ -21,6 +21,7 @@ my %defaults = (
     linebreaks          => 1,
     smileys             => 0,
     url_finder          => 0,
+    strip_linebreaks    => 1,
 );
 sub new {
     my ($class, $args) = @_;
@@ -308,6 +309,7 @@ sub _render_text {
 
 sub parse {
     my ($self, $text, $params) = @_;
+    my $parse_attributes = $self->get_attribute_parser ? $self->get_attribute_parser : $self->can('parse_attributes');
     $self->set_error(undef);
     my $defs = $self->get_tags;
     my $tags = $self->get_allowed || [keys %$defs];
@@ -355,7 +357,7 @@ sub parse {
                 #warn __PACKAGE__.':'.__LINE__.$".Data::Dumper->Dump([\$o], ['o']);
                 if ($self->get_close_open_tags) {
                     # we close the tag for you
-                    $self->_finish_tag($o, '[/' . $o->get_name . ']');
+                    $self->_finish_tag($o, '[/' . $o->get_name . ']', 1);
                     $callback_found_tag->($o);
                     $callback_found_tag->($tag);
                 }
@@ -365,6 +367,27 @@ sub parse {
                     my @red = $o->_reduce;
                     $callback_found_tag->($_) for @red;
                     $callback_found_tag->($tag);
+                }
+            }
+            elsif (ref $tag) {
+                my $def = $defs->{lc $tag->get_name};
+                my $parse = $def->{parse};
+                if ($parse) {
+                    $o->add_content($tag);
+                }
+                else {
+                    my $content = $tag->get_content;
+                    my $string = '';
+                    for my $c (@$content) {
+                        if (ref $c) {
+                            $string .= $c->raw_text( auto_close => 0 );
+                        }
+                        else {
+                            $string .= $c;
+                        }
+                    }
+                    $tag->set_content([$string]);
+                    $o->add_content($tag);
                 }
             }
             else {
@@ -382,7 +405,7 @@ sub parse {
                 my $string = '';
                 for my $c (@$content) {
                     if (ref $c) {
-                        $string .= $c->raw_text;
+                        $string .= $c->raw_text( auto_close => 0 );
                     }
                     else {
                         $string .= $c;
@@ -464,7 +487,7 @@ sub parse {
                             if (@opened) {
                                 $opened[-1]->add_content('');
                             }
-                            $self->_finish_tag($try, '[/'. $try->get_name() .']');
+                            $self->_finish_tag($try, '[/'. $try->get_name() .']', 1);
                         }
                         else {
                             # just add unparsed text
@@ -505,6 +528,7 @@ sub parse {
                 my $tag = $self->new_tag({
                         name    => lc $tag1,
                         attr    => [[$attr]],
+                        attr_raw => $attr,
                         content => [(defined $title and length $title) ? $title : ()],
                         start   => "[$tag1://$content]",
                         close   => 0,
@@ -534,7 +558,7 @@ sub parse {
         if ($after) {
             # found start of a tag
             #warn __PACKAGE__.':'.__LINE__.": find attribute for $tag\n";
-            my ($ok, $attributes, $attr_string, $end) = $self->parse_attributes(
+            my ($ok, $attributes, $attr_string, $end) = $self->$parse_attributes(
                 text => \$after,
                 tag => lc $tag,
             );
@@ -547,6 +571,7 @@ sub parse {
                 my $open = $self->new_tag({
                         name    => lc $tag,
                         attr    => $attributes,
+                        attr_raw => $attr_string,
                         content => [],
                         start   => "[$tag$attr]",
                         close   => $close,
@@ -619,7 +644,7 @@ sub parse {
     if ($self->get_close_open_tags) {
         while (my $opened = pop @opened) {
             $self->_add_error('unclosed', $opened);
-            $self->_finish_tag($opened, '[/' . $opened->get_name . ']');
+            $self->_finish_tag($opened, '[/' . $opened->get_name . ']', 1);
             $callback_found_tag->($opened);
         }
     }
@@ -740,7 +765,7 @@ sub _render_tree {
                 not ref $_
             } @$fallback;
         }
-        if (($tree->get_class || '') eq 'block') {
+        if ($self->get_strip_linebreaks and ($tree->get_class || '') eq 'block') {
             if (@$content == 1 and not ref $content->[0] and defined $content->[0]) {
                 $content->[0] =~ s/^\r?\n//;
                 $content->[0] =~ s/\r?\n\z//;
@@ -834,12 +859,13 @@ sub parse_attributes {
 
 # TODO add callbacks
 sub _finish_tag {
-    my ($self, $tag, $end) = @_;
+    my ($self, $tag, $end, $auto_closed) = @_;
     #warn __PACKAGE__.':'.__LINE__.": _finish_tag(@_)\n";
     #warn __PACKAGE__.':'.__LINE__.$".Data::Dumper->Dump([\$tag], ['tag']);
     unless ($tag->get_finished) {
         $tag->set_end($end);
         $tag->set_finished(1);
+        $tag->set_auto_closed($auto_closed || 0);
     }
     return 1;
 }
@@ -1046,6 +1072,17 @@ Normal tag syntax is:
 If set to 0, tag syntax is
 
   [tag attr2=val2 ...]
+
+=item attribute_parser
+
+You can pass a subref that overrides the default attribute parsing.
+See L<"ATTRIBUTE PARSING">
+
+=item strip_linebreaks
+
+Default: 1
+
+Strips linebreaks at start/end of block tags
 
 =back
 
@@ -1478,13 +1515,14 @@ The resulting attribute structure will have an empty first element:
 
 If you have bbcode attributes that don't fit into the two standard
 syntaxes you can inherit from Parse::BBCode and overwrite the
-parse_attributes method.
+parse_attributes method, or you can pass an option attribute_parser
+contaning a subref.
 
 Example:
 
-    [size=10]bold[/size] [foo|bar|boo]footext[/foo] end
+    [size=10]big[/size] [foo|bar|boo]footext[/foo] end
 
-The b tag should be parsed normally, the foo tag needs different parsing.
+The size tag should be parsed normally, the foo tag needs different parsing.
 
     sub parse_attributes {
         my ($self, %args) = @_;
@@ -1501,9 +1539,13 @@ The b tag should be parsed normally, the foo tag needs different parsing.
             return ($valid, [@attr], $attr_string, ']');
         }
         else {
-            return $self->SUPER::parse_attributes(@_);
+            return shift->SUPER::parse_attributes(@_);
         }
     }
+    my $parser = Parse::BBCode->new({
+        ...
+        attribute_parser => \&parse_attributes,
+    });
 
 If the attributes are not valid, return
 

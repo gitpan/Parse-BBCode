@@ -1,4 +1,4 @@
-use Test::More tests => 16;
+use Test::More tests => 20;
 use Test::NoWarnings;
 use Parse::BBCode;
 use strict;
@@ -51,6 +51,15 @@ my @tests = (
          q#[b][i]italic[/i][/b]#,
          q#[noparse][b][i]italic[/i][/b][/noparse]#,
     ],
+   [ 1, q#[noparse][i]italic#,
+        q#[i]italic#,
+        q#[noparse][i]italic[/noparse]#,
+   ],
+   [ 1, q#[quote][noparse][i]italic#,
+        q#<quote>[i]italic</quote>#,
+        q#[quote][noparse][i]italic[/noparse][/quote]#,
+   ],
+
 );
 
 for (@tests) {

@@ -1,5 +1,9 @@
 Revision history for Perl module Parse::BBCode
 
+0.13_003 Mon Oct  3 13:50:16 CEST 2011
+- Bugfix: closing noparse tags
+- new option: strip linebreaks before/after block tags is now configurable
+
 0.13_002 Wed Sep 28 18:08:21 CEST 2011
 - make attribute parsing inheritable
 
