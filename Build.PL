@@ -18,6 +18,7 @@ my $build = Module::Build->new(
     build_requires => {
         'Test::More'          => 0,
         'Test::NoWarnings'    => 0,
+        'Module::Build'       => 0.28,
     },
     recommends         => {
     },
@@ -26,7 +27,7 @@ my $build = Module::Build->new(
     meta_merge => {
         resources => {
             license     => 'http://dev.perl.org/licenses/',
-            repository  => 'https://parse-bbcode.googlecode.com/svn',
+            repository  => 'https://github.com/perlpunk/Parse-BBCode',
         },
     },
 );

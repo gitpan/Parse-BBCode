@@ -13,7 +13,7 @@ __PACKAGE__->mk_accessors(qw/
 use Carp;
 my $scalar_util = eval "require Scalar::Util; 1";
 
-our $VERSION = '0.13_003';
+our $VERSION = '0.13_004';
 
 my %defaults = (
     strict_attributes   => 1,
@@ -250,10 +250,11 @@ sub _compile_def {
             # tag attribute or content
             else {
                 my ($escapes, $type) = @$c;
+                my @escapes = @$escapes;
                 my $var = '';
                 my $attributes = $tag->get_attr;
                 if ($type eq 'attr' and @$attributes > 1) {
-                    my $name = shift @$escapes;
+                    my $name = shift @escapes;
                     for my $item (@$attributes[1 .. $#$attributes]) {
                         if ($item->[0] eq $name) {
                             $var = $item->[1];
@@ -274,7 +275,7 @@ sub _compile_def {
                     }
                     $var = $string;
                 }
-                for my $e (@$escapes) {
+                for my $e (@escapes) {
                     my $sub = $esc->{$e};
                     if ($sub) {
                         $var = $sub->($self, $c, $var);
@@ -839,16 +840,16 @@ sub parse_attributes {
             return (0, [], $attr_string, $end);
         }
         my @array;
-        if ($attr =~ s/^(?:"([^"]+)"|(.*?)(?:\s+|$))//) {
-            my $val = defined $1 ? $1 : $2;
+        if ($attr =~ s/^(?:(["'])(.+?)\1|(.*?)(?:\s+|$))//) {
+            my $val = defined $2 ? $2 : $3;
             push @array, [$val];
         }
-        while ($attr =~ s/^([a-zA-Z0-9]+)=(?:"([^"]+)"|(.*?)(?:\s+|$))//) {
+        while ($attr =~ s/^([a-zA-Z0-9_]+)=(?:(["'])(.+?)\2|(.*?)(?:\s+|$))//) {
             my $name = $1;
-            my $val = defined $2 ? $2 : $3;
+            my $val = defined $3 ? $3 : $4;
             push @array, [$name, $val];
         }
-        if ($self->get_strict_attributes and length $attr) {
+        if ($self->get_strict_attributes and length $attr and $attr =~ tr/ //c) {
             return (0, [], $attr_string, $end);
         }
         $attributes = [@array];
