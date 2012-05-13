@@ -23,7 +23,7 @@
       },
       "configure" : {
          "requires" : {
-            "Module::Build" : "0.4"
+            "Module::Build" : "0.28"
          }
       },
       "runtime" : {
@@ -40,7 +40,7 @@
    "provides" : {
       "Parse::BBCode" : {
          "file" : "lib/Parse/BBCode.pm",
-         "version" : "0.13_004"
+         "version" : "0.14"
       },
       "Parse::BBCode::HTML" : {
          "file" : "lib/Parse/BBCode/HTML.pm",
@@ -63,7 +63,7 @@
          "version" : "0.01"
       }
    },
-   "release_status" : "testing",
+   "release_status" : "stable",
    "resources" : {
       "license" : [
          "http://dev.perl.org/licenses/"
@@ -72,5 +72,5 @@
          "url" : "https://github.com/perlpunk/Parse-BBCode"
       }
    },
-   "version" : "0.13_004"
+   "version" : "0.14"
 }

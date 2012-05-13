@@ -1,0 +1,56 @@
+This file contains message digests of all files listed in MANIFEST,
+signed via the Module::Signature module, version 0.68.
+
+To verify the content in this distribution, first make sure you have
+Module::Signature installed, then type:
+
+    % cpansign -v
+
+It will check each file's integrity, as well as the signature's
+validity.  If "==> Signature verified OK! <==" is not displayed,
+the distribution may already have been compromised, and you should
+not run its Makefile.PL or Build.PL.
+
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+SHA1 a1d6b5defd0444df7694fe181fc31e3f3308581f Build.PL
+SHA1 dca060ab442bb5e52c025a9e3f744b6f41c88e2e Changes
+SHA1 7f766ece21cd9439297a4f696c3c2b1171dbe74e MANIFEST
+SHA1 339740074f193a1f024df9fe48c3fd9ec763edbe META.json
+SHA1 ba9be8ca5209d98ae70efaade86fa1d88cb5dd1b META.yml
+SHA1 88ec4fe3b80f72d08743ceef4202a2039c9276d4 Makefile.PL
+SHA1 95247a1ee49916dcf37bebc2db88fc0e09b58a23 README
+SHA1 26d698fd66dad393ca2ae70fb59f919c2095b474 examples/bench.pl
+SHA1 1caa99efddb775619aac5cbd3b588a8f8704f6b0 examples/code_download.pl
+SHA1 d7d95d268712bf90edb711c84ebcde752ec61ac7 examples/compare.html
+SHA1 32559c2295d554ab69dfaf65286e59a88dd9f38f examples/example.pl
+SHA1 48d93e4d5139bb3fa912be6f61226bac6c7d68c6 lib/Parse/BBCode.pm
+SHA1 7dfea2c21df6041205204e7b68de0ea6fbfacfb3 lib/Parse/BBCode/HTML.pm
+SHA1 1c6ce799e4d44227d5a283cbdbc234753577474a lib/Parse/BBCode/Markdown.pm
+SHA1 2059de154699a48e15a2947ff8146c6c541b9f5d lib/Parse/BBCode/Tag.pm
+SHA1 06a1fcb919c58de4de206bab4d5d4ff643491082 lib/Parse/BBCode/Text.pm
+SHA1 0ebb653003d5c2c44556f69e8bfadd19306b295b lib/Parse/BBCode/XHTML.pm
+SHA1 8fcfae822bbb55fcd458625f2becb4a774e5a1e8 t/01_load.t
+SHA1 f99412021e18e066bfacc9e664ecf4099e416579 t/02_pod.t
+SHA1 7df405a8e9cc0ffc08651c45730d0a8ed6163685 t/03_pod_cover.t
+SHA1 160764e5dcc27bc4a852537762ee22bfb4607aa3 t/04_parse.t
+SHA1 45d9fa41ea54b5ca7f8c6f2c8b5aa00e4422712f t/05_balanced.t
+SHA1 ff6b617bcdc841c91e463153fc1a98c7e145a8ba t/06_unbalanced.t
+SHA1 b97be6e20e0cf7f4a1cc86ca876d9b6c35273905 t/07_invalid.t
+SHA1 3c86e6af38b5393445687a02b8bfcf422fb7e7e6 t/08_various_tags.t
+SHA1 1dd6ec5fdeea24d435a3eb2fc5bbe44ff35f91cd t/09_close_tags.t
+SHA1 c333c509319ae8ed406a1c0775af8172de661c91 t/10_xhtml.t
+SHA1 a826040385f2388960b75ab8fe92707ab2a84676 t/11_markdown.t
+SHA1 294954bfbc8c5ab0b9a8e544aacd80f4fdbf3fb7 t/12_direct_attribute.t
+SHA1 c251430c147f867da8639aa3b578e2273081f01c t/13_plaintext.t
+SHA1 a1bad2fb80fa12c2f3d15ec7ea20ebfe437a882d t/14_info.t
+SHA1 a90cd9d6f1a84ab5ea0302924f02a4968efeb22c t/15_short.t
+SHA1 b26286d15c942bc14580907bfaad677c027ea4d6 t/16_attributes.t
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAk+vzvYACgkQx8FzFTuJkhe0DgCgq8Qj3YigqRcnkYHxlSnokZ7s
+klUAn1dR8rExceXF09DkwddM+RiV3dk5
+=f7Tx
+-----END PGP SIGNATURE-----
