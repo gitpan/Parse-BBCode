@@ -13,7 +13,7 @@ __PACKAGE__->mk_accessors(qw/
 use Carp;
 my $scalar_util = eval "require Scalar::Util; 1";
 
-our $VERSION = '0.14';
+our $VERSION = '0.14_001';
 
 my %defaults = (
     strict_attributes   => 1,
@@ -110,7 +110,7 @@ sub _compile_tags {
                 my $code = sub {
                     my ($text, $post_processor) = @_;
                     my $out = '';
-                    while ($text =~ s/^ (.*?[\s]|^) ($re) (?=[\s]|$)//xsm) {
+                    while ($text =~ s/\A (^|.*?[\s]) ($re) (?=[\s]|$)//xsm) {
                         my ($pre, $emo) = ($1, $2);
                         my $url = "$smileys->{base_url}$smileys->{icons}->{$emo}";
                         my $emo_escaped = Parse::BBCode::escape_html($emo);
@@ -805,7 +805,7 @@ sub _render_tree {
 }
 
 
-sub escape_html {                                                                                          
+sub escape_html {
     my ($str) = @_;
     return '' unless defined $str;
     $str =~ s/&/&amp;/g;
@@ -843,11 +843,11 @@ sub parse_attributes {
         }
         my @array;
         if (length($attribute_quote) == 1) {
-            if ($attr =~ s/^(?:$attribute_quote(.+?)$attribute_quote|(.*?)(?:\s+|$))//) {
+            if ($attr =~ s/^(?:$attribute_quote(.+?)$attribute_quote(?:\s+|$)|(.*?)(?:\s+|$))//) {
                 my $val = defined $1 ? $1 : $2;
                 push @array, [$val];
             }
-            while ($attr =~ s/^([a-zA-Z0-9_]+)=(?:$attribute_quote(.+?)$attribute_quote|(.*?)(?:\s+|$))//) {
+            while ($attr =~ s/^([a-zA-Z0-9_]+)=(?:$attribute_quote(.+?)$attribute_quote(?:\s+|$)|(.*?)(?:\s+|$))//) {
                 my $name = $1;
                 my $val = defined $2 ? $2 : $3;
                 push @array, [$name, $val];
@@ -931,7 +931,7 @@ Or if you want to define your own tags:
             tags => {
                 # load the default tags
                 Parse::BBCode::HTML->defaults,
-                
+
                 # add/override tags
                 url => 'url:<a href="%{link}A">%{parse}s</a>',
                 i   => '<i>%{parse}s</i>',
