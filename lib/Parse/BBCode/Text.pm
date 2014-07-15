@@ -1,11 +1,11 @@
 package Parse::BBCode::Text;
+$Parse::BBCode::Text::VERSION = '0.15';
 use strict;
 use warnings;
 use Carp qw(croak carp);
 
 use base qw/ Parse::BBCode /;
 
-our $VERSION = '0.03';
 my %default_tags = (
     'b'     => '%s',
     'i'     => '%s',

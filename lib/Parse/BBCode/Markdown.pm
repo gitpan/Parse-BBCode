@@ -1,11 +1,10 @@
 package Parse::BBCode::Markdown;
+$Parse::BBCode::Markdown::VERSION = '0.15';
 use strict;
 use warnings;
 use Carp qw(croak carp);
 use URI::Escape;
 use base qw/ Parse::BBCode /;
-
-our $VERSION = '0.02';
 
 my %default_tags = (
     'b'     => '*%s*',
